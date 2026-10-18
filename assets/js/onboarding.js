@@ -1,7 +1,7 @@
 /* Re:Root onboarding — one decision per screen; white button = yes, underlined text = skip. */
-(function () {
+RR.mountOnboarding = function (layoutRoot, signal) {
   const { $, $$, esc, Spring, auth, theme, motion, key, glass } = RR;
-  const user = auth.require('login.html'); if (!user) return;
+  const user = auth.current(); if (!user) return;
   const ICON = {
     leaf: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21v-7M12 14c0-6 4-10 9-10 0 6-4 10-9 10zM12 14C12 9 9 6 4 6c0 5 3 8 8 8"/></svg>',
     target: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/></svg>',
@@ -63,10 +63,11 @@
     if (existing.habits.length && !example) { existing.habits.push(...S.habits.filter(h => !existing.habits.some(e => e.name === h.name))); RRStore.save(user.email, existing); }
     else RRStore.save(user.email, S);
     auth.update({ prefs: { onboarded: true, notif: st.notif, reminder: st.reminder } });
-    location.href = 'app.html#today';
+    RR.navigate('app/today');
   }
 
   document.addEventListener('click', e => {
+    if (!stage.isConnected) return;
     const g = e.target.closest('[data-go]');
     if (g) {
       const a = g.dataset.go;
@@ -83,7 +84,7 @@
     const th = e.target.closest('[data-theme]');
     if (th) { st.theme = th.dataset.theme; theme.set(st.theme); $$('[data-theme]').forEach(b => b.setAttribute('aria-pressed', b.dataset.theme === st.theme)); return; }
     if (e.target.closest('[data-act="notif-yes"]')) askNotif();
-  });
+  }, { signal });
   function refreshPrimary() {
     const b = $('[data-go="next"]', stage); const n = st.habits.length;
     b.disabled = !n; b.textContent = n ? `Continue with ${n} habit${n > 1 ? 's' : ''}` : 'Pick at least one';
@@ -92,8 +93,8 @@
     if (e.target.id !== 'custom') return; e.preventDefault();
     const v = $('#custom-in').value.trim(); if (!v) return;
     if (!st.habits.includes(v)) st.habits.push(v); render(false);
-  });
-  document.addEventListener('change', e => { if (e.target.id === 'rem') st.reminder = e.target.value || '20:00'; });
+  }, { signal });
+  document.addEventListener('change', e => { if (e.target.id === 'rem') st.reminder = e.target.value || '20:00'; }, { signal });
 
   async function askNotif() {
     const perm = $('#perm');
@@ -109,4 +110,4 @@
     }
   }
   render(false);
-})();
+};

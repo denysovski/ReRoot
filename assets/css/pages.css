@@ -61,9 +61,9 @@
 
 /* ---------- phone mockups ---------- */
 .phones{display:flex;gap:clamp(14px,3vw,34px);justify-content:center;align-items:flex-end;flex-wrap:wrap;perspective:1400px}
-.phone{width:min(260px,78vw);aspect-ratio:9/18.5;border-radius:42px;padding:10px;background:var(--fg);box-shadow:0 40px 80px -40px rgba(0,0,0,.6);flex:none}
+.phone{width:min(260px,78vw);aspect-ratio:9/18.5;border-radius:42px;padding:9px;background:#0b0b0c;box-shadow:0 0 0 1px rgba(255,255,255,.14),inset 0 0 0 1px rgba(255,255,255,.06),0 40px 80px -40px rgba(0,0,0,.7);flex:none}
 .phone .scr{width:100%;height:100%;border-radius:33px;background:var(--bg);overflow:hidden;padding:44px 16px 16px;display:grid;gap:10px;align-content:start;position:relative}
-.phone .scr::before{content:"";position:absolute;top:12px;left:50%;width:84px;height:24px;border-radius:20px;background:var(--fg);transform:translateX(-50%)}
+.phone .scr::before{content:"";position:absolute;top:12px;left:50%;width:84px;height:24px;border-radius:20px;background:#0b0b0c;transform:translateX(-50%);z-index:2}
 .phone.tilt-l{transform:rotateY(14deg) translateZ(-40px)}
 .phone.tilt-r{transform:rotateY(-14deg) translateZ(-40px)}
 @media (max-width:760px){.phone.tilt-l,.phone.tilt-r{transform:none}}
@@ -200,3 +200,65 @@
 .ob-done-list{display:grid;gap:8px;text-align:left;width:100%;max-width:380px}
 .ob-done-list div{display:flex;gap:10px;align-items:center;padding:12px 16px;border-radius:16px;font-size:15px}
 .ob-done-list svg{width:18px;height:18px;flex:none}
+
+/* ---------- split sections ---------- */
+.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:clamp(40px,7vw,110px);align-items:center}
+.split.rev{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr)}
+@media (max-width:920px){.split,.split.rev{grid-template-columns:1fr}.split.rev > .scene-host{order:2}}
+.split .sec-head{margin-bottom:0}
+.gcard .tag{font-size:12.5px;color:var(--muted);font-weight:500}
+.gcard .read{font-size:14px;font-weight:550;margin-top:6px}
+
+/* ---------- generic 3D scene ---------- */
+.scene-host{perspective:1600px;display:grid;place-items:center;min-height:420px;position:relative}
+.scene{position:relative;transform-style:preserve-3d;will-change:transform}
+
+/* 3D habit stack */
+.stack3d{width:min(440px,82vw);height:360px}
+.srow{position:absolute;left:0;right:0;top:calc(var(--i) * 78px);height:66px;border-radius:20px;display:flex;align-items:center;gap:14px;padding:0 18px;
+  transform:translateZ(calc((4 - var(--i)) * 16px));transition:transform .9s var(--ease),box-shadow .9s var(--ease);transition-delay:calc(var(--i) * 40ms)}
+.built .srow{transform:translateZ(calc((4 - var(--i)) * 28px));box-shadow:var(--glass-shadow),0 30px 40px -24px rgba(0,0,0,.55)}
+.scene-host:hover .srow{transform:translateZ(calc((4 - var(--i)) * 48px))}
+.sr-ring{width:34px;height:34px;border-radius:50%;flex:none;background:conic-gradient(var(--fg) var(--p),var(--faint) 0);display:grid;place-items:center}
+.sr-ring::after{content:"";width:24px;height:24px;border-radius:50%;background:var(--surface)}
+.sr-main{display:grid;min-width:0;flex:1}
+.sr-main b{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sr-main span{font-size:12.5px;color:var(--muted)}
+.sr-dots{display:grid;grid-template-columns:repeat(7,10px);gap:4px}
+.sr-dots i{width:10px;height:10px;border-radius:3px;background:var(--fg)}
+.sr-dots i.x{background:transparent;box-shadow:inset 0 0 0 1.4px var(--fg)}
+.stack-chip{position:absolute;right:-6%;top:-12%;padding:12px 18px;border-radius:999px;font-size:14px;font-weight:600;transform:translateZ(150px);white-space:nowrap}
+@media (max-width:620px){.stack3d{width:min(280px,72vw);height:300px;margin-left:36px}.srow{height:54px;top:calc(var(--i) * 62px);padding:0 14px}.sr-dots{display:none}.stack-chip{right:4%;top:-14%}.scene-host{min-height:360px}}
+
+/* 3D phones */
+.phones3d{width:min(560px,92vw);height:560px}
+.phones3d .phone{position:absolute;top:0;left:50%;width:230px;margin-left:-115px;transition:transform 1s var(--ease)}
+.phones3d .p1{transform:translateX(-160px) translateZ(-140px) rotateY(22deg)}
+.phones3d .p2{transform:translateZ(40px)}
+.phones3d .p3{transform:translateX(160px) translateZ(-140px) rotateY(-22deg)}
+.scene-host:hover .phones3d .p1{transform:translateX(-200px) translateZ(-120px) rotateY(16deg)}
+.scene-host:hover .phones3d .p3{transform:translateX(200px) translateZ(-120px) rotateY(-16deg)}
+.scene-host:hover .phones3d .p2{transform:translateZ(90px)}
+@media (max-width:620px){.phones3d{height:420px}.phones3d .phone{width:170px;margin-left:-85px}
+  .phones3d .p1{transform:translateX(-96px) translateZ(-120px) rotateY(22deg)}.phones3d .p3{transform:translateX(96px) translateZ(-120px) rotateY(-22deg)}}
+.center-scr{display:grid;gap:14px;justify-items:center;text-align:center}
+.phone .scr:has(.center-scr){align-content:center;padding-bottom:60px}
+
+/* ---------- showcase rows ---------- */
+.show-list{display:grid;gap:clamp(100px,14vw,180px);padding-top:clamp(20px,4vw,40px)}
+.show-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(40px,8vw,120px);align-items:center}
+.show-row.rev .scene-host{order:2}
+@media (max-width:860px){.show-row{grid-template-columns:1fr}.show-row.rev .scene-host{order:0}}
+.show-row .scene-host{min-height:560px}
+.show-row .phone{box-shadow:0 60px 90px -40px rgba(0,0,0,.7)}
+.show-text{display:grid;gap:16px;max-width:46ch}
+.show-text h2{font-size:clamp(32px,4.6vw,52px)}
+.show-text .what{font-size:19px;color:var(--muted)}
+.show-text h3{font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:500;margin-top:12px}
+.show-text ul{margin:0;padding:0;list-style:none;display:grid;gap:12px}
+.show-text li{display:grid;grid-template-columns:20px 1fr;gap:10px;font-size:16px;line-height:1.5}
+.show-text li::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--fg);margin-top:8px}
+
+.breathe-demo{width:110px;height:110px;border-radius:50%;background:var(--fg);animation:breathe 14s ease-in-out infinite}
+@keyframes breathe{0%,100%{transform:scale(.6)}28%,57%{transform:scale(1)}}
+@media (prefers-reduced-motion: reduce){.breathe-demo{animation:none}.srow,.phones3d .phone{transition:none}}

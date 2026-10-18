@@ -1,8 +1,7 @@
 /* Re:Root app — logged-in experience. */
-(function () {
+RR.mountApp = function (layoutRoot, signal, initialTab) {
   const { $, $$, esc, clamp, Spring, tracker, project, rubber, theme, auth, menu, toast, glass, motion, key, addDays, fromKey, fmt, tzGuess, closeAll } = RR;
-  let user = auth.require('login.html'); if (!user) return;
-  if (!user.prefs.onboarded) { location.replace('onboarding.html'); return; }
+  let user = auth.current(); if (!user) return;
   let S = RRStore.load(user.email);
   const save = () => RRStore.save(user.email, S);
   const tz = () => user.prefs.tz || tzGuess();
@@ -71,11 +70,11 @@
     user = auth.update({ prefs: { notif: on } }); paintAcct(); scheduleReminder(); toast(on ? 'Daily reminder on' : 'Daily reminder off');
   });
   $('#m-time').addEventListener('change', e => { user = auth.update({ prefs: { reminder: e.target.value || '20:00' } }); scheduleReminder(); toast(`Reminder set for ${e.target.value}`); });
-  $('#m-replay').addEventListener('click', () => { auth.update({ prefs: { onboarded: false } }); location.href = 'onboarding.html'; });
+  $('#m-replay').addEventListener('click', () => { auth.update({ prefs: { onboarded: false } }); RR.navigate('onboarding'); });
   $('#m-reset').addEventListener('click', () => { $('#m-reset-confirm').hidden = false; $('#m-reset').hidden = true; });
   $('#m-reset-no').addEventListener('click', () => { $('#m-reset-confirm').hidden = true; $('#m-reset').hidden = false; });
   $('#m-reset-yes').addEventListener('click', () => { S = RRStore.blank(); save(); for (const k in prevRing) delete prevRing[k]; $('#m-reset-confirm').hidden = true; $('#m-reset').hidden = false; acct.hide(); RENDER[view](); toast('All check-ins deleted'); });
-  $('#m-logout').addEventListener('click', () => { auth.logout(); location.href = 'index.html'; });
+  $('#m-logout').addEventListener('click', () => { auth.logout(); RR.navigate(''); });
   paintAcct();
 
   /* ---------- reminder while the app is open (simulated scheduling) ---------- */
@@ -102,7 +101,7 @@
   const viewP = new Spring(1, { eps: .001 }); let incoming = null;
   viewP.on(p => { if (!incoming) return; incoming.style.opacity = p; incoming.style.transform = p >= 1 ? '' : `translateY(${(1 - p) * 14}px) scale(${.985 + .015 * p})`; incoming.style.filter = p >= .999 || motion.reduce ? '' : `blur(${(1 - p) * 8}px)`; });
   const RENDER = { home: renderHome, today: renderToday, progress: renderProgress, goals: renderGoals, read: renderRead };
-  function go(v, { instant } = {}) {
+  function go(v, { instant, fromRouter } = {}) {
     if (!VIEWS.includes(v)) v = 'home';
     const changed = v !== view; view = v;
     $$('.tab').forEach(t => t.removeAttribute('aria-current')); $(`.tab[data-nav="${v}"]`).setAttribute('aria-current', 'page');
@@ -110,13 +109,14 @@
     $$('.view').forEach(s => s.hidden = s.dataset.view !== v);
     incoming = $(`.view[data-view="${v}"]`); RENDER[v]();
     if (changed) { window.scrollTo(0, 0); if (instant) viewP.set(1); else { viewP.set(0); viewP.to(1, { response: .42, damping: 1 }); } }
-    try { history.replaceState(null, '', '#' + v); } catch (e) {}
+    if (!fromRouter) RR.pushPath(v === 'home' ? 'app' : 'app/' + v);
+    document.title = (v === 'home' ? 'Home' : v[0].toUpperCase() + v.slice(1)) + ' · Re:Root';
   }
-  document.addEventListener('click', e => { const n = e.target.closest('[data-nav]'); if (n) { e.preventDefault(); go(n.dataset.nav); } });
-  addEventListener('resize', () => placeInd(true));
+  document.addEventListener('click', e => { const n = e.target.closest('[data-nav]'); if (n) { e.preventDefault(); go(n.dataset.nav); } }, { signal });
+  addEventListener('resize', () => placeInd(true), { signal });
 
   const exampleBanner = () => S.example ? `<div class="glass banner"><span>You're looking at example history so the charts have something to show.</span><button class="btn-text" data-act="clear-examples">Clear examples and start fresh</button></div>` : '';
-  const emptyState = () => `<div class="glass empty"><h3>What do you want to quit?</h3><p>Add a habit like nail biting, late-night scrolling or anything else you want to stop. Then check in once a day.</p><div class="actions-row"><button class="btn btn-primary" data-press data-act="add">Add your first habit</button><a class="btn-text" href="how-it-works.html">How Re:Root works</a></div></div>`;
+  const emptyState = () => `<div class="glass empty"><h3>What do you want to quit?</h3><p>Add a habit like nail biting, late-night scrolling or anything else you want to stop. Then check in once a day.</p><div class="actions-row"><button class="btn btn-primary" data-press data-act="add">Add your first habit</button><a class="btn-text" href="how-it-works">How Re:Root works</a></div></div>`;
   const greet = () => { const h = now().getHours(); return h < 5 ? 'Still up' : h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'; };
 
   /* ---------- HOME ---------- */
@@ -135,7 +135,7 @@
         <div class="dash-side">
           <section class="glass card"><div class="chart-h"><h3 style="font-size:17px">Today</h3><small>${done} of ${S.habits.length} checked in</small></div><div class="status-list">${S.habits.map(h => { const l = getLog(h.id, tk) || {}; return `<div class="status"><span>${esc(h.name)}</span><em class="${l.s === 'c' ? 'c' : ''}">${l.s === 'c' ? 'Clean' : l.s === 'x' ? 'Slipped' : 'Not yet'}</em></div>`; }).join('')}</div></section>
           <button class="glass card link-card" data-glass data-act="article" data-a="${tip.id}" style="text-align:left"><span class="eyebrow">Today's read · ${tip.min} min</span><h3>${esc(tip.t)}</h3><p>${esc(tip.d)}</p></button>
-          <a class="glass card link-card" data-glass href="community.html"><span class="eyebrow">Community</span><h3>Talk to people quitting the same thing</h3><p>Rooms for nail biting, porn and masturbation, smoking, late nights and wins.</p></a>
+          <a class="glass card link-card" data-glass href="community"><span class="eyebrow">Community</span><h3>Talk to people quitting the same thing</h3><p>Rooms for nail biting, porn and masturbation, smoking, late nights and wins.</p></a>
         </div></div>` : emptyState()}`;
     const hn = $('#home-n'); hn && countUp(hn, bn);
     glass(r);
@@ -297,7 +297,7 @@
     document.body.style.overflow = ''; lastFocus && lastFocus.focus && lastFocus.focus({ preventScroll: true });
   }
   scrim.addEventListener('click', () => closeSheet());
-  addEventListener('keydown', e => { if (e.key === 'Escape' && !sheet.hidden) closeSheet(); });
+  addEventListener('keydown', e => { if (e.key === 'Escape' && !sheet.hidden) closeSheet(); }, { signal });
   (() => {
     let drag = null; const vt = tracker();
     const down = e => { if (e.target.closest('button')) return; sheetY.stop(); drag = { id: e.pointerId, y0: e.clientY, s0: sheetY.value }; vt.reset(); vt.add(sheetY.value); e.currentTarget.setPointerCapture(e.pointerId); };
@@ -319,7 +319,7 @@
     const h = { id: RRStore.uid(), name, goal: newGoal, start: start > todayKey() ? todayKey() : start };
     S.habits.push(h); S.sel = h.id; save(); closeSheet(); buzz(); toast(`Added ${name}`);
     if (view === 'home') go('today'); else RENDER[view]();
-  });
+  }, { signal });;
 
   /* ---------- actions ---------- */
   document.addEventListener('click', async e => {
@@ -338,14 +338,15 @@
       case 'del-no': confirmDel = null; renderGoals(); break;
       case 'del-yes': S.habits = S.habits.filter(h => h.id !== id); for (const k in S.logs) delete S.logs[k][id]; confirmDel = null; save(); renderGoals(); toast('Habit deleted'); break;
       case 'clear-examples': { const names = S.habits.map(h => ({ name: h.name, goal: h.goal })); S = RRStore.blank(); names.forEach(n => S.habits.push({ id: RRStore.uid(), name: n.name, goal: n.goal, start: tk })); S.sel = S.habits[0] && S.habits[0].id; save(); for (const k in prevRing) delete prevRing[k]; RENDER[view](); toast('Examples cleared. Your habits start today.'); break; }
-      case 'article': { const ar = window.RR_ARTICLES.find(x => x.id === b.dataset.a); openSheet(ar.t, `<p class="eyebrow" style="margin-bottom:10px">${esc(ar.tag)} · ${ar.min} min read</p><div class="prose">${ar.b}</div><div class="actions" style="margin-top:26px"><button class="btn btn-primary" data-press data-act="close-sheet">Done reading</button><a class="btn-text" href="article.html?id=${ar.id}">Open as a full page</a></div>`); break; }
+      case 'article': { const ar = window.RR_ARTICLES.find(x => x.id === b.dataset.a); openSheet(ar.t, `<p class="eyebrow" style="margin-bottom:10px">${esc(ar.tag)} · ${ar.min} min read</p><div class="prose">${ar.b}</div><div class="actions" style="margin-top:26px"><button class="btn btn-primary" data-press data-act="close-sheet">Done reading</button><a class="btn-text" href="articles/${ar.id}">Open as a full page</a></div>`); break; }
       case 'breathe': breath.on ? stopBreath() : startBreath(); break;
       case 'enable-notif': $('#m-notif').click(); setTimeout(() => RENDER[view](), 600); break;
     }
-  });
+  }, { signal });;
 
-  const initial = location.hash.slice(1);
-  go(VIEWS.includes(initial) ? initial : 'home', { instant: true });
+  go(VIEWS.includes(initialTab) ? initialTab : 'home', { instant: true, fromRouter: true });
+  signal.addEventListener('abort', () => { clearTimeout(remT); breath.on && stopBreath(); document.body.style.overflow = ''; });
   document.fonts && document.fonts.ready.then(() => placeInd(true));
   document.documentElement.classList.add('ready');
-})();
+  return { go: (v, o) => go(v, o) };
+};

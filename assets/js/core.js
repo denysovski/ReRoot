@@ -66,7 +66,7 @@
 
   /* ---------- theme: light | dark | system ---------- */
   const theme = {
-    get() { return ls.get('reroot.theme', 'system'); },
+    get() { return ls.get('reroot.theme', 'dark'); },
     set(t) { ls.set('reroot.theme', t); this.apply(); document.dispatchEvent(new CustomEvent('rr:theme')); },
     apply() { const t = this.get(); if (t === 'light' || t === 'dark') root.dataset.theme = t; else delete root.dataset.theme; },
     isDark() { const t = this.get(); return t === 'dark' || (t === 'system' && matchMedia('(prefers-color-scheme: dark)').matches); },
@@ -168,6 +168,17 @@
   const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
   const fromKey = k => { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d); };
   const fmt = (d, o) => d.toLocaleDateString('en-US', o);
+
+  /* ---------- cursor shine: background brightens softly around the pointer ---------- */
+  if (matchMedia('(hover: hover) and (pointer: fine)').matches) {
+    const sh = document.createElement('div'); sh.className = 'shine'; sh.setAttribute('aria-hidden', 'true');
+    const amb = document.querySelector('.ambient'); amb ? amb.after(sh) : document.body.prepend(sh);
+    const sx = new Spring(innerWidth / 2, { eps: .2 }), sy = new Spring(innerHeight / 2, { eps: .2 });
+    const paint = () => { sh.style.setProperty('--sx', sx.value + 'px'); sh.style.setProperty('--sy', sy.value + 'px'); };
+    sx.on(paint); sy.on(paint);
+    addEventListener('pointermove', e => { sh.classList.add('on'); sx.to(e.clientX, { response: .45, damping: 1 }); sy.to(e.clientY, { response: .45, damping: 1 }); }, { passive: true });
+    document.documentElement.addEventListener('pointerleave', () => sh.classList.remove('on'));
+  }
 
   window.RR = { $, $$, clamp, esc, ls, motion, Spring, tracker, project, rubber, theme, auth, menu, closeAll, toast, glass, key, addDays, fromKey, fmt, tzGuess };
 })();

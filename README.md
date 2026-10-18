@@ -23,26 +23,32 @@ Habits have roots: the time, place, feeling or person that sets them off. Re:Roo
 
 ## Style
 
-- **Monochrome.** Black, white and greys only. Light and dark themes are designed separately, plus an automatic mode.
+- **Charcoal and white.** A charcoal background by default, white and greys on top. A light theme and an automatic mode are one tap away.
+- **Cursor shine.** The background brightens softly around your pointer.
+- **3D scenes.** A calendar, a stack of habits and a fan of phones float in 3D and tilt toward your mouse.
 - **Glass over soft light.** Translucent, blurred cards and menus float over slow-moving grey light. Data stays readable on top.
 - **Apple-style fluid motion.** Every animation is a spring (response + damping), so it can be interrupted, reversed and grabbed mid-flight. Buttons react on pointer-down. The bottom sheet tracks your finger, rubber-bands at the edge and carries your release velocity into its closing animation.
 - **One clear next step.** The positive action is always a **white pill with black text**. The negative or skip action is always **underlined text** below it ("Skip this step", "Not now").
 - **Type.** [Geist](https://vercel.com/font) for everything, Geist Mono for numbers.
 - **Reduced motion.** With "reduce motion" on, springs jump to their end state and decorative motion stops.
 
-## Pages
+## Pages and URLs
+
+Re:Root is a **single-page app**: the site loads once, then every page swaps in instantly with a short transition. URLs are clean, with no `.html`:
 
 | Public site | Account | App (logged in) |
 | --- | --- | --- |
-| `index.html` home with a 3D calendar | `register.html` | `app.html` with Home, Today, Progress, Goals, Read |
-| `how-it-works.html` | `login.html` | Top-left **RE:ROOT** pill: main site, community chats, articles |
-| `showcase.html` | `onboarding.html` (habits, goal, notifications, theme) | Top-right **log out** pill: theme, timezone, reminder, replay onboarding, log out |
-| `community.html` | | |
-| `articles.html`, `article.html?id=…` | | |
-| `about.html`, `faq.html`, `contact.html` | | |
-| `terms.html`, `privacy.html`, `404.html` | | |
+| `/` home with 3D calendar, 3D habit stack and 3D phones | `/register` | `/app` home, `/app/today`, `/app/progress`, `/app/goals`, `/app/read` |
+| `/how-it-works` | `/login` | Top-left **RE:ROOT** pill: main site, community chats, articles |
+| `/showcase` (every screen, explained) | `/onboarding` (habits, goal, notifications, theme) | Top-right **log out** pill: theme, timezone, reminder, replay onboarding, log out |
+| `/community` | | |
+| `/articles`, `/articles/<id>` | | |
+| `/about`, `/faq`, `/contact` | | |
+| `/terms`, `/privacy` | | |
 
 The public pages use a centered, rounded navigation bar at 70% of the page width with a big footer. Once you log in, the navigation is replaced by two rounded corner buttons and a floating tab bar at the bottom.
+
+**How clean URLs work on GitHub Pages:** GitHub Pages has no server-side routing, so opening `/ReRoot/about` directly serves `404.html`. That page stores the path and redirects to the app, which restores the URL with the History API and renders the right view. Links inside the site never reload the page.
 
 ## How the simulated accounts work
 
@@ -54,12 +60,17 @@ The public pages use a centered, rounded navigation bar at 70% of the page width
 ## Project structure
 
 ```
-index.html … 404.html      public pages, login, register, onboarding, app
-assets/css/base.css         tokens, buttons, glass cards, nav, footer, menus
-assets/css/pages.css        public pages, 3D calendar, auth, onboarding
+index.html                  the single page: loads styles and scripts once
+404.html                    GitHub Pages fallback that hands deep links to the app
+serve.py                    local server that behaves like GitHub Pages
+assets/css/base.css         tokens, buttons, glass cards, nav, footer, menus, cursor shine
+assets/css/pages.css        public pages, 3D scenes, showcase, auth, onboarding
 assets/css/app.css          logged-in app
-assets/js/core.js           springs, press feedback, theme, simulated auth, menus, toast
-assets/js/site.js           nav, footer, reveal, word fill, 3D calendar, splash
+assets/js/core.js           springs, press feedback, theme, simulated auth, menus, toast, shine
+assets/js/views.js          HTML templates for every view
+assets/js/spa.js            router: clean URLs, auth guards, transitions
+assets/js/site.js           public layout, reveal, word fill, 3D scenes
+assets/js/pages.js          behaviour for articles, community, contact, login, register
 assets/js/data.js           guides shared by Articles and the Read tab
 assets/js/store.js          per-user data and example history
 assets/js/onboarding.js     onboarding flow (incl. Notification permission)
@@ -73,7 +84,7 @@ No framework and no build step. Plain HTML, CSS and JavaScript.
 ```bash
 git clone https://github.com/denysovski/ReRoot.git
 cd ReRoot
-python3 -m http.server 8000
+python3 serve.py
 # open http://localhost:8000
 ```
 
