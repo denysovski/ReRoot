@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Log in · Re:Root</title>
+<meta name="description" content="Log in to Re:Root.">
+<link rel="icon" href="assets/img/icon.svg" type="image/svg+xml">
+<script>try{var t=JSON.parse(localStorage.getItem('reroot.theme'));if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300..800&family=Geist+Mono:wght@400..600&display=swap">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/pages.css">
+</head>
+<body data-page="login">
+<div id="nav"></div>
+<main id="top">
+<section class="wrap auth"><form class="glass auth-card" id="login" novalidate>
+<div><p class="eyebrow">Welcome back</p><h1 style="margin-top:8px">Log in</h1><p class="sub" style="margin-top:8px">Keep your streak going.</p></div>
+<div class="field"><label for="l-email">Email</label><input class="input" id="l-email" type="email" autocomplete="email" placeholder="name@example.com"></div>
+<div class="field"><label for="l-pass">Password</label><div class="pw-wrap"><input class="input" id="l-pass" type="password" autocomplete="current-password"><button type="button" data-pw="l-pass">Show</button></div></div>
+<p class="err" id="l-err" hidden></p>
+<div class="actions"><button class="btn btn-primary btn-block" data-press type="submit">Log in</button><a class="btn-text" href="register.html">Create an account instead</a></div>
+<p class="sim-note">This is a simulation. Accounts live only in this browser, so log in with the account you created here.</p>
+</form></section>
+</main>
+<div id="footer"></div>
+<script src="assets/js/core.js"></script>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/site.js"></script>
+<script>
+(() => { const { $, auth } = RR; document.addEventListener('click', e => { const b = e.target.closest('[data-pw]'); if (!b) return; const i = document.getElementById(b.dataset.pw); i.type = i.type === 'password' ? 'text' : 'password'; b.textContent = i.type === 'password' ? 'Show' : 'Hide'; });
+function showErr(id, r) { const el = RR.$(id); el.hidden = false; el.textContent = r.error; const f = { name: 'name', email: 'email', password: 'pass' }[r.field]; }
+  if (auth.current()) location.replace('app.html');
+  $('#login').addEventListener('submit', async e => { e.preventDefault();
+    const r = await auth.login({ email: $('#l-email').value, password: $('#l-pass').value });
+    if (r.error) { showErr('#l-err', r); ($(r.field === 'password' ? '#l-pass' : '#l-email')).focus(); return; }
+    location.href = r.user.prefs.onboarded ? 'app.html' : 'onboarding.html'; }); })();
+</script>
+</body>
+</html>

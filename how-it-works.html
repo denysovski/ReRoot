@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>How it works · Re:Root</title>
+<meta name="description" content="How Re:Root works: create an account, pick habits, check in daily, see patterns and get through hard moments.">
+<link rel="icon" href="assets/img/icon.svg" type="image/svg+xml">
+<script>try{var t=JSON.parse(localStorage.getItem('reroot.theme'));if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300..800&family=Geist+Mono:wght@400..600&display=swap">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/pages.css">
+</head>
+<body data-page="how">
+<div id="nav"></div>
+<main id="top">
+
+<section class="wrap phead"><p class="eyebrow enter">How it works</p><h1 class="enter" style="--d:.06s">Five steps. One of them daily.</h1>
+<p class="lead enter" style="--d:.12s">Re:Root keeps the routine small so you can keep it up for months. Here's the whole flow, from sign-up to the hard days.</p></section>
+<section class="wrap steps" id="start">
+  <div class="glass step" data-reveal><div><p class="eyebrow">First</p><h3>Create an account</h3><p>Enter your name, email and a password. In this demo the account is simulated and stays in your browser, so nothing is sent anywhere.</p><div class="actions-row" style="margin-top:22px"><a class="btn btn-primary btn-sm" data-press href="register.html">Create account</a></div></div>
+    <div class="step-vis"><div class="field"><label>Name</label><div class="input" style="display:flex;align-items:center">Alex</div></div><div class="field"><label>Email</label><div class="input" style="display:flex;align-items:center">alex@example.com</div></div></div></div>
+  <div class="glass step" data-reveal><div><p class="eyebrow">Then</p><h3>Choose what you're quitting</h3><p>Onboarding asks which habits you want to stop, your goal streak, whether you want reminders and which theme you like. You can skip any step.</p>
+    <ul><li>Nail biting, masturbation, porn, smoking, scrolling or your own</li><li>Goals from 7 to 365 days</li><li>Browser notifications for a daily reminder</li></ul></div>
+    <div class="step-vis"><div class="filters" style="margin:0"><span class="chip" aria-pressed="true">Nail biting</span><span class="chip">Smoking</span><span class="chip" aria-pressed="true">Phone in bed</span><span class="chip">Porn</span><span class="chip">Sugar</span></div></div></div>
+  <div class="glass step" data-reveal><div><p class="eyebrow">Every day</p><h3>Check in</h3><p>Tap "Stayed clean" or "Slipped", rate the urge from 0 to 5 and write what helped. Missed a day? Tap it in the week row to fix it.</p></div>
+    <div class="step-vis"><div class="m-btns" style="gap:10px"><span class="on" style="height:46px;font-size:14px;border-radius:14px">Stayed clean</span><span style="height:46px;font-size:14px;border-radius:14px">Slipped</span></div><div class="m-dots" style="gap:8px"><i class="c"></i><i class="c"></i><i class="c"></i><i></i><i class="c"></i><i class="c"></i><i class="c"></i></div></div></div>
+  <div class="glass step" data-reveal><div><p class="eyebrow">Over weeks</p><h3>See the pattern</h3><p>Your streak line, urge strength and a 12-week calendar show when the habit pulls hardest, so you can plan for those moments.</p></div>
+    <div class="step-vis"><svg viewBox="0 0 300 120" style="width:100%"><path d="M0 110 L30 100 L60 90 L90 112 L120 96 L150 80 L180 64 L210 52 L240 36 L270 24 L300 12 L300 120 L0 120Z" fill="currentColor" opacity=".08"/><path d="M0 110 L30 100 L60 90 L90 112 L120 96 L150 80 L180 64 L210 52 L240 36 L270 24 L300 12" fill="none" stroke="currentColor" stroke-width="2.5"/></svg></div></div>
+  <div class="glass step" data-reveal><div><p class="eyebrow">On hard days</p><h3>Get through the moment</h3><p>Open the Read tab for a breathing exercise and short guides, or post in a community room. If you slip, log it and start again tomorrow.</p><div class="actions-row" style="margin-top:22px"><a class="btn-text" href="articles.html">Browse the guides</a></div></div>
+    <div class="step-vis" style="justify-items:center"><div style="width:110px;height:110px;border-radius:50%;background:var(--fg);animation:breathe 14s ease-in-out infinite"></div><style>@keyframes breathe{0%,100%{transform:scale(.6)}28%,57%{transform:scale(1)}}@media (prefers-reduced-motion:reduce){.step-vis div{animation:none!important}}</style></div></div>
+</section>
+<section class="wrap block"><div class="glass cta-band" data-reveal><h2>Ready for day one?</h2><div class="actions"><a class="btn btn-primary" data-press href="register.html">Create free account</a><a class="btn-text" href="faq.html">Read the FAQ first</a></div></div></section>
+
+</main>
+<div id="footer"></div>
+<script src="assets/js/core.js"></script>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/site.js"></script>
+
+</body>
+</html>

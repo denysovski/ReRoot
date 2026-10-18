@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Community · Re:Root</title>
+<meta name="description" content="Re:Root community rooms for nail biting, porn and masturbation, smoking, late nights and wins.">
+<link rel="icon" href="assets/img/icon.svg" type="image/svg+xml">
+<script>try{var t=JSON.parse(localStorage.getItem('reroot.theme'));if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300..800&family=Geist+Mono:wght@400..600&display=swap">
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/pages.css">
+</head>
+<body data-page="community">
+<div id="nav"></div>
+<main id="top">
+
+<section class="wrap phead"><p class="eyebrow enter">Community</p><h1 class="enter" style="--d:.06s">You're not quitting alone.</h1>
+<p class="lead enter" style="--d:.12s">Rooms for each habit, plus one for wins. Share what's working, ask for help on a hard night, stay as anonymous as you like.</p></section>
+<section class="wrap"><div class="chat">
+  <div class="glass rooms" id="rooms"></div>
+  <div class="glass thread"><div class="thread-h"><h2 id="room-name"></h2><span class="demo-tag">Demo room · example messages, your posts stay in this browser</span></div>
+    <div class="msgs" id="msgs" aria-live="polite"></div>
+    <form class="compose" id="compose"><label for="msg-in" class="sr" hidden>Message</label><input class="input" id="msg-in" maxlength="400" placeholder="Write a message…" autocomplete="off"><button class="btn btn-primary" data-press type="submit">Send</button></form></div>
+</div></section>
+<section class="wrap block"><div class="grid-3">
+<div class="glass gcard" data-glass><h3>Be kind</h3><p>Everyone here is working on something hard. No shaming, no lectures.</p></div>
+<div class="glass gcard" data-glass><h3>Stay anonymous</h3><p>Use a nickname. Don't share addresses, phone numbers or anyone else's details.</p></div>
+<div class="glass gcard" data-glass><h3>Get real help when needed</h3><p>Rooms are peer support, not therapy. In a crisis, contact your local emergency number.</p></div>
+</div></section>
+
+</main>
+<div id="footer"></div>
+<script src="assets/js/core.js"></script>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/site.js"></script>
+<script>
+(() => { const { $, esc, ls, auth } = RR; const me = auth.current();
+  const ROOMS = { general: ['General', 'Introduce yourself'], nails: ['Nail biting', 'Hands, fidgets, routines'], nofap: ['Porn & masturbation', 'Late nights and triggers'], smoke: ['Smoking & vaping', 'Cravings and swaps'], night: ['Late nights', 'The hardest hour'], wins: ['Wins', 'Share a milestone'] };
+  const SEED = {
+    general: [['Mara', 'Day 4 here. Mostly checking in so I have to be honest with myself.', '09:12'], ['Tomek', 'Welcome! The first week is the loudest. It gets quieter.', '09:20']],
+    nails: [['Jo', 'Plaster on my thumb has been the single best trick for me.', '18:02'], ['Lev', 'I keep a smooth stone in my pocket. Hands need a job.', '18:40']],
+    nofap: [['anon_17', 'Phone out of the bedroom changed everything. Boring advice, but it works.', '22:10'], ['K.', 'Slipped yesterday after a bad day. Logged it, back at day 1, still up from last month.', '22:31']],
+    smoke: [['Rita', 'Swapped the after-coffee cigarette for a 5 minute walk. Week 2.', '07:45']],
+    night: [['Sam', 'Anyone else find 23:00 to 01:00 the worst? I set my reminder for 22:30 now.', '23:02'], ['Ola', 'Same. Shower and a paper book is my reset.', '23:15']],
+    wins: [['Daan', '30 days of no nail biting. First time I needed nail clippers in years.', '12:00'], ['Mara', 'One full week!', '20:14']] };
+  let room = 'general';
+  const mine = () => ls.get('reroot.chat', {});
+  const initials = n => n.replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase() || '?';
+  function render() {
+    $('#rooms').innerHTML = Object.entries(ROOMS).map(([id, [n, s]]) => `<button class="room" data-press data-room="${id}" aria-pressed="${id === room}"><b>${n}</b><span>${s}</span></button>`).join('');
+    $('#room-name').textContent = ROOMS[room][0];
+    const list = [...SEED[room].map(m => ({ who: m[0], text: m[1], at: m[2] })), ...(mine()[room] || [])];
+    $('#msgs').innerHTML = list.map(m => `<div class="msg ${m.me ? 'me' : ''}"><span class="av">${esc(initials(m.who))}</span><div><div class="who">${esc(m.who)}<span>${esc(m.at)}</span></div><p>${esc(m.text)}</p></div></div>`).join('');
+    $('#msgs').scrollTop = 1e6;
+  }
+  document.addEventListener('click', e => { const r = e.target.closest('[data-room]'); if (r) { room = r.dataset.room; render(); } });
+  $('#compose').addEventListener('submit', e => { e.preventDefault(); const v = $('#msg-in').value.trim(); if (!v) return;
+    const all = mine(); (all[room] = all[room] || []).push({ who: me ? me.name : 'Guest', text: v, at: new Date().toTimeString().slice(0, 5), me: true }); ls.set('reroot.chat', all);
+    $('#msg-in').value = ''; render(); });
+  const h = location.hash.slice(1); if (ROOMS[h]) room = h; render(); })();
+</script>
+</body>
+</html>
