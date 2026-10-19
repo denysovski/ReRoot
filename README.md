@@ -10,6 +10,8 @@ Live site: https://denysovski.github.io/ReRoot/
 
 ![Homepage](docs/screenshots/home.png)
 
+*Screenshots show the light theme. The site opens in the dark coal theme by default.*
+
 ## What's inside
 
 - **Daily check-in**: "Stayed clean" or "Slipped", an urge rating from 0 to 5 and a short note.
