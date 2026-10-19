@@ -154,15 +154,15 @@
 
   /* ---------- CTA carousel: slides move right to left, arrows + timed indicators ---------- */
   function carousel(c, signal) {
-    const track = $('.car-track', c), slides = $$('.car-slide', c), dots = $('.car-dots', c), N = slides.length, DUR = 7000, C = 2 * Math.PI * 9;
+    const track = $('.car-track', c), slides = $$('.car-slide', c), dots = $('.car-dots', c), N = slides.length, DUR = 5000, C = 2 * Math.PI * 9;
     dots.innerHTML = slides.map((_, i) => `<button class="car-dot" data-i="${i}" aria-label="Show slide ${i + 1}"><span class="fill"></span></button>`).join('');
     const pos = new Spring(0, { eps: .0005 }); let idx = 0, t0 = 0, started = false, paused = false, pauseAt = 0;
     pos.on(v => { track.style.transform = `translateX(${-v * 100}%)`; slides.forEach((sl, i) => { const d = Math.abs(i - v); sl.style.opacity = Math.max(0, 1 - d * 1.2); sl.style.filter = d > .02 && !motion.reduce ? `blur(${Math.min(8, d * 10)}px)` : ''; }); });
     pos.set(0);
-    const paint = p => $$('.car-dot', c).forEach((d, i) => { d.classList.toggle('on', i === idx); d.firstChild.style.transform = `scaleX(${i === idx ? Math.max(0, Math.min(1, p)) : 0})`; });
-    const go = i => { idx = (i + N) % N; pos.to(idx, { response: .6, damping: 1 }); t0 = performance.now(); paint(0); };
-    c.addEventListener('click', e => { const b = e.target.closest('[data-car], .car-dot'); if (!b) return; if (b.dataset.car === 'prev') go(idx - 1); else if (b.dataset.car === 'next') go(idx + 1); else go(+b.dataset.i); }, { signal });
-    c.addEventListener('pointerenter', () => { paused = true; pauseAt = performance.now(); }, { signal });
+    const paint = p => $$('.car-dot', c).forEach((d, i) => { d.classList.toggle('on', i === idx); d.firstChild.style.transform = `scaleX(${i < idx ? 1 : i === idx ? Math.max(0, Math.min(1, p)) : 0})`; });
+    const go = (i, user) => { idx = (i + N) % N; pos.to(idx, { response: .6, damping: 1 }); t0 = performance.now(); if (user) { started = true; paused = false; } paint(0); };
+    c.addEventListener('click', e => { const b = e.target.closest('[data-car], .car-dot'); if (!b) return; if (b.dataset.car === 'prev') go(idx - 1, true); else if (b.dataset.car === 'next') go(idx + 1, true); else go(+b.dataset.i, true); }, { signal });
+    
     c.addEventListener('pointerleave', () => { if (!paused) return; paused = false; t0 += performance.now() - pauseAt; }, { signal });
     let sx = null; c.addEventListener('pointerdown', e => { if (e.target.closest('a,button')) return; sx = e.clientX; }, { signal });
     c.addEventListener('pointerup', e => { if (sx == null) return; const dx = e.clientX - sx; sx = null; if (Math.abs(dx) > 50) go(idx + (dx < 0 ? 1 : -1)); }, { signal });
@@ -177,6 +177,20 @@
 
   /* ---------- About: ring and strip fill in when they come into view ---------- */
   function fillIns(root, signal) {
+    // homepage streak card: squares fill in and the day count climbs
+    $$('[data-streak-anim]', root).forEach(card => {
+      const num = $('.rv-top b', card), cells = $$('.rv-strip i', card), bar = $('.rv-bar i', card), target = cells.filter(c => c.classList.contains('c')).length;
+      cells.forEach(c => c.classList.add('pend')); if (bar) bar.style.width = '0%';
+      const run = () => { cells.forEach((c, k) => { c.style.transitionDelay = (k * 70) + 'ms'; c.classList.remove('pend'); });
+        new Spring(0, { eps: .0005 }).on(p => { num.textContent = Math.round(target * p); if (bar) bar.style.width = (40 * p) + '%'; }).to(1, { response: 1.4, damping: 1 }); };
+      const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { run(); io.disconnect(); } }, { threshold: .5 });
+      io.observe(card); signal.addEventListener('abort', () => io.disconnect());
+    });
+    // community: avatars slide in and the member count climbs
+    $$('[data-crowd]', root).forEach(cw => {
+      const n = $('[data-count-to]', cw), to = +n.dataset.countTo; cw.classList.add('go');
+      new Spring(0, { eps: .0002 }).on(p => { n.textContent = Math.round(1000 + (to - 1000) * p).toLocaleString('en-US'); }).to(1, { response: 2.2, damping: 1 });
+    });
     const els = $$('[data-ring-anim], [data-strip-anim]', root); if (!els.length) return;
     const run = el => {
       if (el.hasAttribute('data-ring-anim')) { const to = +el.dataset.ringAnim, num = +el.dataset.num, sp = $('span', el);

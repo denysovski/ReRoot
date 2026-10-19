@@ -29,9 +29,9 @@ The design is inspired by **Apple**: its calm, monochrome product pages, the tra
 
 The site is black and white only. The default is a dark coal theme, with a light theme and an automatic mode in the menu.
 
-- Background: `#111111` (coal)
-- Cards: `#191919`, raised fields `#202020`
-- Lines and empty states: `#2D2D2D`
+- Background: `#0B0B0B` (coal black)
+- Cards: `#141414`, raised fields `#1A1A1A`
+- Lines and empty states: `#282828`
 - Secondary text: `#9B9BA2`
 - Main text: `#F3F3F5`
 - Actions: pure white `#FFFFFF` with black text
@@ -40,7 +40,7 @@ White is saved for the next thing to tap. A positive action is always a **white 
 
 ### Hexagon background
 
-A thin hexagon pattern (white lines at about 6% opacity) covers the background. It is strongest at the top of the page and fades toward the bottom. Around the mouse cursor the hexagon lines light up softly, brightest right under the pointer and fading out within about 190 px.
+A thin hexagon pattern (white lines at about 6% opacity) covers the background. It is strongest at the top of the page and fades toward the bottom. Around the mouse cursor the hexagon lines light up softly, brightest right under the pointer and fading out within about 270 px.
 
 ### Glass over soft light
 
