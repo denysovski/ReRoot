@@ -628,3 +628,60 @@
 .m-frame .m-badge{order:1}
 .cform .input{background-color:var(--raised)}
 .cform select.input{background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);background-position:calc(100% - 24px) 50%,calc(100% - 18px) 50%;background-size:6px 6px;background-repeat:no-repeat}
+
+/* ---------- carousel v2: arrows inside the card, ring timers ---------- */
+.car-ui{display:none}
+.car-slide{padding:clamp(48px,7vw,96px) clamp(76px,9vw,140px) clamp(96px,9vw,120px)}
+.car-arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:2;width:52px;height:52px;background:var(--glass-strong)}
+.car-prev{left:clamp(14px,2vw,28px)}
+.car-next{right:clamp(14px,2vw,28px)}
+.car-arrow:hover{transform:translateY(-50%) scale(1.05)}
+.car-dots{position:absolute;left:0;right:0;bottom:clamp(24px,3vw,36px);display:flex;justify-content:center;gap:10px}
+.car-dot,.car-dot.on{width:26px;height:26px;padding:0;border-radius:50%;background:none;overflow:visible;transition:none}
+.car-dot svg{width:26px;height:26px;transform:rotate(-90deg);display:block}
+.car-dot .t{fill:none;stroke:var(--faint);stroke-width:2.5}
+.car-dot .a{fill:none;stroke:var(--fg);stroke-width:2.5;stroke-linecap:round}
+.car-dot.on .t{stroke:#3a3a3a}
+@media (max-width:620px){.car-slide{padding-inline:22px;padding-bottom:110px}.car-arrow{top:auto;bottom:18px;transform:none;width:44px;height:44px}.car-arrow:hover{transform:scale(1.05)}.car-dots{bottom:27px}}
+
+/* ---------- showcase: simple design section ---------- */
+.simple-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media (max-width:860px){.simple-grid{grid-template-columns:1fr}}
+.simple-grid .gcard{padding:32px}
+.simple-grid h3{font-size:clamp(22px,2.2vw,28px)}
+.simple-grid p{font-size:16.5px}
+
+/* ---------- articles: fluid masonry grid ---------- */
+#art-grid{display:block;columns:3 320px;column-gap:16px}
+#art-grid > *{break-inside:avoid;margin-bottom:16px;display:grid;width:100%}
+#art-grid .read-more{justify-self:start;margin-top:8px;pointer-events:none}
+#art-grid .gcard:hover .read-more{background:#e4e4e6;box-shadow:var(--btn-ring),0 0 22px 2px rgba(255,255,255,.25)}
+.pen{width:46px;height:46px;border-radius:14px;background:#111;color:#fff;display:grid;place-items:center}
+.pen svg{width:22px;height:22px}
+.write-card .btn-primary{margin-top:6px}
+.back-btn{justify-self:start}
+
+/* ---------- about: animated ring, strip, help button, socials ---------- */
+.b-ring{background:conic-gradient(var(--fg) var(--p,0%),var(--faint) 0)}
+.b-strip[data-strip-anim] i{background:var(--faint);transform:scaleY(.55);transition:background-color .45s var(--ease),box-shadow .45s var(--ease),transform .55s var(--ease)}
+.b-strip[data-strip-anim] i.in{transform:none}
+.b-strip[data-strip-anim] i.in.c{background:var(--fg)}
+.b-strip[data-strip-anim] i.in.x{background:transparent;box-shadow:inset 0 0 0 1.4px var(--fg)}
+.b-cta{justify-self:start;margin-top:10px}
+.socials{display:flex;gap:10px;margin-top:10px}
+.soc{width:42px;height:42px;border-radius:50%;background:var(--white);color:var(--black);display:grid;place-items:center;cursor:pointer;transition:transform .4s var(--ease),box-shadow .4s var(--ease)}
+.soc svg{width:18px;height:18px}
+.soc:hover{transform:translateY(-3px);box-shadow:0 0 20px 2px rgba(255,255,255,.25)}
+
+/* ---------- tooltip: no tail, text fades in when it changes ---------- */
+.tip::after{display:none}
+.tip-t{display:block;animation:tipIn .35s var(--ease)}
+@keyframes tipIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* ---------- register: password checklist ---------- */
+.pw-rules{list-style:none;margin:-4px 0 0;padding:0;display:grid;gap:7px}
+.pw-rules li{display:flex;align-items:center;gap:9px;font-size:13.5px;color:var(--muted);opacity:.45;transition:opacity .35s var(--ease),color .35s var(--ease)}
+.pw-rules li::before{content:"";width:18px;height:18px;border-radius:50%;box-shadow:inset 0 0 0 1.5px currentColor;flex:none;transition:background-color .35s var(--ease),box-shadow .35s var(--ease)}
+.pw-rules li.ok{opacity:1;color:var(--fg)}
+.pw-rules li.ok::before{box-shadow:none;background:var(--white) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12.5l4 4L18 8'/%3E%3C/svg%3E") center/11px no-repeat}
+.auth-form .sim-note{font-size:11px;opacity:.85}

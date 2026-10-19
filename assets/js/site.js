@@ -149,25 +149,43 @@
     $$('[data-scene]', root).forEach(h => scene(h, $('.scene', h), h.dataset.scene, signal));
     const cal = $('#cal3d', root); cal && calendar(cal, signal);
     $$('[data-carousel]', root).forEach(c => carousel(c, signal));
+    fillIns(root, signal);
   }
 
   /* ---------- CTA carousel: slides move right to left, arrows + timed indicators ---------- */
   function carousel(c, signal) {
-    const track = $('.car-track', c), slides = $$('.car-slide', c), dots = $('.car-dots', c), N = slides.length, DUR = 7000;
-    dots.innerHTML = slides.map((_, i) => `<button class="car-dot" data-i="${i}" aria-label="Show slide ${i + 1}"><i></i></button>`).join('');
-    const pos = new Spring(0, { eps: .0005 }); let idx = 0, t0 = performance.now(), paused = false, pauseAt = 0;
+    const track = $('.car-track', c), slides = $$('.car-slide', c), dots = $('.car-dots', c), N = slides.length, DUR = 7000, C = 2 * Math.PI * 9;
+    dots.innerHTML = slides.map((_, i) => `<button class="car-dot" data-i="${i}" aria-label="Show slide ${i + 1}"><svg viewBox="0 0 24 24"><circle class="t" cx="12" cy="12" r="9"/><circle class="a" cx="12" cy="12" r="9" stroke-dasharray="${C}" stroke-dashoffset="${C}"/></svg></button>`).join('');
+    const pos = new Spring(0, { eps: .0005 }); let idx = 0, t0 = 0, started = false, paused = false, pauseAt = 0;
     pos.on(v => { track.style.transform = `translateX(${-v * 100}%)`; slides.forEach((sl, i) => { const d = Math.abs(i - v); sl.style.opacity = Math.max(0, 1 - d * 1.2); sl.style.filter = d > .02 && !motion.reduce ? `blur(${Math.min(8, d * 10)}px)` : ''; }); });
     pos.set(0);
+    const paint = p => $$('.car-dot', c).forEach((d, i) => { d.classList.toggle('on', i === idx); d.querySelector('.a').style.strokeDashoffset = C * (1 - (i === idx ? p : 0)); });
     const go = i => { idx = (i + N) % N; pos.to(idx, { response: .6, damping: 1 }); t0 = performance.now(); paint(0); };
-    const paint = p => $$('.car-dot', c).forEach((d, i) => { d.classList.toggle('on', i === idx); d.firstChild.style.transform = `scaleX(${i === idx ? p : i < idx ? 1 : 0})`; });
     c.addEventListener('click', e => { const b = e.target.closest('[data-car], .car-dot'); if (!b) return; if (b.dataset.car === 'prev') go(idx - 1); else if (b.dataset.car === 'next') go(idx + 1); else go(+b.dataset.i); }, { signal });
     c.addEventListener('pointerenter', () => { paused = true; pauseAt = performance.now(); }, { signal });
-    c.addEventListener('pointerleave', () => { paused = false; t0 += performance.now() - pauseAt; }, { signal });
-    // swipe
+    c.addEventListener('pointerleave', () => { if (!paused) return; paused = false; t0 += performance.now() - pauseAt; }, { signal });
     let sx = null; c.addEventListener('pointerdown', e => { if (e.target.closest('a,button')) return; sx = e.clientX; }, { signal });
     c.addEventListener('pointerup', e => { if (sx == null) return; const dx = e.clientX - sx; sx = null; if (Math.abs(dx) > 50) go(idx + (dx < 0 ? 1 : -1)); }, { signal });
-    const tick = now => { if (signal.aborted || !c.isConnected) return; if (!paused && !motion.reduce) { const p = (now - t0) / DUR; if (p >= 1) go(idx + 1); else paint(p); } requestAnimationFrame(tick); };
+    // the timer starts the first time the carousel scrolls into view
+    const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting) && !started) { started = true; t0 = performance.now(); io.disconnect(); } }, { threshold: .45 });
+    io.observe(c); signal.addEventListener('abort', () => io.disconnect());
+    const tick = now => { if (signal.aborted || !c.isConnected) return;
+      if (started && !paused && !motion.reduce) { const p = (now - t0) / DUR; if (p >= 1) go(idx + 1); else paint(p); }
+      requestAnimationFrame(tick); };
     paint(0); requestAnimationFrame(tick);
+  }
+
+  /* ---------- About: ring and strip fill in when they come into view ---------- */
+  function fillIns(root, signal) {
+    const els = $$('[data-ring-anim], [data-strip-anim]', root); if (!els.length) return;
+    const run = el => {
+      if (el.hasAttribute('data-ring-anim')) { const to = +el.dataset.ringAnim, num = +el.dataset.num, sp = $('span', el);
+        new Spring(0, { eps: .0005 }).on(p => { el.style.setProperty('--p', (to * p) + '%'); sp.textContent = Math.round(num * p); }).to(1, { response: 1.6, damping: 1 }); }
+      else $$('i', el).forEach((i, k) => { i.style.transitionDelay = (k * 45) + 'ms'; i.classList.add('in'); });
+    };
+    const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { run(e.target); io.unobserve(e.target); } }), { threshold: .5 });
+    els.forEach(el => io.observe(el)); signal.addEventListener('abort', () => io.disconnect());
+    $$('[data-strip-anim]', root).forEach(el => el.closest('.b').addEventListener('pointerenter', () => { $$('i', el).forEach((i, k) => { i.classList.remove('in'); i.style.transitionDelay = '0ms'; }); void el.offsetWidth; run(el); }, { signal }));
   }
 
   RR.site = { mountShell, updateNav, enhance };
