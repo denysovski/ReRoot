@@ -19,20 +19,20 @@
   color-scheme:light;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#1a1a1c; --bg-2:#202023; --surface:#242427; --raised:#2c2c30;
-  --fg:#f3f3f5; --muted:#9b9ba2; --faint:#3a3a40; --line:rgba(255,255,255,.08);
-  --glass:rgba(255,255,255,.05); --glass-strong:rgba(40,40,44,.72); --glass-edge:rgba(255,255,255,.16);
+  --bg:#0f0f0f; --bg-2:#141414; --surface:#181818; --raised:#202020;
+  --fg:#f3f3f5; --muted:#9b9ba2; --faint:#2f2f2f; --line:rgba(255,255,255,.08);
+  --glass:rgba(255,255,255,.05); --glass-strong:rgba(28,28,28,.74); --glass-edge:rgba(255,255,255,.16);
   --glass-shadow:0 1px 0 rgba(255,255,255,.07) inset,0 0 0 1px rgba(255,255,255,.08),0 24px 60px -28px rgba(0,0,0,.75);
-  --blob:rgba(255,255,255,.07); --scrim:rgba(0,0,0,.55); --shine:rgba(255,255,255,.075);
+  --blob:rgba(255,255,255,.06); --scrim:rgba(0,0,0,.55); --shine:rgba(255,255,255,.075);
   --on-fg:#000000;
   --btn-ring:0 10px 30px -12px rgba(0,0,0,.6);
   color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#1a1a1c; --bg-2:#202023; --surface:#242427; --raised:#2c2c30;
-  --fg:#f3f3f5; --muted:#9b9ba2; --faint:#3a3a40; --line:rgba(255,255,255,.08);
-  --glass:rgba(255,255,255,.05); --glass-strong:rgba(40,40,44,.72); --glass-edge:rgba(255,255,255,.16);
+  --bg:#0f0f0f; --bg-2:#141414; --surface:#181818; --raised:#202020;
+  --fg:#f3f3f5; --muted:#9b9ba2; --faint:#2f2f2f; --line:rgba(255,255,255,.08);
+  --glass:rgba(255,255,255,.05); --glass-strong:rgba(28,28,28,.74); --glass-edge:rgba(255,255,255,.16);
   --glass-shadow:0 1px 0 rgba(255,255,255,.07) inset,0 0 0 1px rgba(255,255,255,.08),0 24px 60px -28px rgba(0,0,0,.75);
-  --blob:rgba(255,255,255,.07); --scrim:rgba(0,0,0,.55); --shine:rgba(255,255,255,.075);
+  --blob:rgba(255,255,255,.06); --scrim:rgba(0,0,0,.55); --shine:rgba(255,255,255,.075);
   --on-fg:#000000;
   --btn-ring:0 10px 30px -12px rgba(0,0,0,.6);
   color-scheme:dark}
