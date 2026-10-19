@@ -156,3 +156,34 @@ body{min-height:100vh}
 .close-x{width:34px;height:34px;border-radius:50%;background:var(--line);display:grid;place-items:center}
 .close-x svg{width:14px;height:14px}
 .reminder-bar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 18px;border-radius:18px;margin-bottom:16px;font-size:14px}
+
+/* ---------- home dashboard ---------- */
+.dash-bars{width:100%;height:150px;display:block}
+.dash-bars rect{fill:var(--fg);transform-box:fill-box;transform-origin:50% 100%;transform:scaleY(0)}
+.dash-bars rect.sl{fill:var(--muted)}
+.legend i.sl{background:var(--muted)}
+.wdbars{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;height:150px;align-items:end}
+.wdb{display:grid;grid-template-rows:1fr auto;gap:6px;height:100%;justify-items:center}
+.wdb i{align-self:end;width:100%;height:max(4px,var(--h));border-radius:6px;background:var(--faint);transform-origin:50% 100%;transform:scaleY(0)}
+.wdb.hard i{background:var(--fg)}
+.wdb span{font-size:12px;color:var(--muted)}
+.hcols{display:grid;grid-template-columns:1fr 1fr;gap:clamp(18px,3vw,40px)}
+@media (max-width:760px){.hcols{grid-template-columns:1fr}}
+.hrow{display:grid;gap:6px;padding:12px 0;border-bottom:1px solid var(--line)}
+.hrow:last-child{border-bottom:0}
+.hr-top{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.hr-top b{font-weight:600}
+.hr-top .num{font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+.hrow small{font-size:12.5px;color:var(--muted)}
+.hbar{height:8px;border-radius:99px;background:var(--faint);overflow:hidden}
+.hbar i{display:block;height:100%;width:var(--w);border-radius:inherit;background:var(--fg);transform-origin:0 50%;transform:scaleX(0)}
+.invite{display:grid;grid-template-columns:auto 1fr;gap:14px 16px;align-items:center}
+.invite h3{font-size:17px;font-weight:600}
+.invite p{color:var(--muted);font-size:14px;margin-top:2px}
+.invite .btn{grid-column:1/-1;justify-self:start}
+.inv-ic{width:46px;height:46px;border-radius:14px;background:var(--fg);color:var(--bg);display:grid;place-items:center}
+.inv-ic svg{width:23px;height:23px}
+.dash-links{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+@media (max-width:760px){.dash-links{grid-template-columns:1fr}}
+.dash .chart-h h3{font-size:17px}
+@media (prefers-reduced-motion: reduce){.dash-bars rect,.wdb i,.hbar i{transform:none!important}}

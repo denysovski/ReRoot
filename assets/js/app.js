@@ -1,6 +1,7 @@
 /* Re:Root app — logged-in experience. */
 RR.mountApp = function (layoutRoot, signal, initialTab) {
-  const { $, $$, esc, clamp, Spring, tracker, project, rubber, theme, auth, menu, toast, glass, motion, key, addDays, fromKey, fmt, tzGuess, closeAll } = RR;
+  const { $, $$, esc, clamp, Spring, tracker, project, rubber, theme, auth, menu, toast, motion, key, addDays, fromKey, fmt, tzGuess, closeAll } = RR;
+  const glass = () => {}; // no hover tilt or spotlight inside the app
   let user = auth.current(); if (!user) return;
   let S = RRStore.load(user.email);
   const save = () => RRStore.save(user.email, S);
@@ -119,26 +120,75 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
   const emptyState = () => `<div class="glass empty"><h3>What do you want to quit?</h3><p>Add a habit like nail biting, late-night scrolling or anything else you want to stop. Then check in once a day.</p><div class="actions-row"><button class="btn btn-primary" data-press data-act="add">Add your first habit</button><a class="btn-text" href="how-it-works">How Re:Root works</a></div></div>`;
   const greet = () => { const h = now().getHours(); return h < 5 ? 'Still up' : h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'; };
 
-  /* ---------- HOME ---------- */
+  /* ---------- HOME: an overview of how you're doing ---------- */
   function renderHome() {
-    const r = $('#home-root'), tk = todayKey();
-    let best = null, bn = -1; S.habits.forEach(h => { const n = currentStreak(h); if (n > bn) { bn = n; best = h; } });
-    const done = S.habits.filter(h => (getLog(h.id, tk) || {}).s).length;
-    const strip = best ? Array.from({ length: 30 }, (_, i) => { const l = getLog(best.id, key(addDays(now(), i - 29))); return `<i class="${l && l.s ? l.s : ''}"></i>`; }).join('') : '';
+    const r = $('#home-root'), tk = todayKey(), H = S.habits;
+    const head = `<header class="vhead"><p class="eyebrow">${fmt(now(), { weekday: 'long', month: 'long', day: 'numeric' })} · ${now().toTimeString().slice(0, 5)}</p><h1 class="vtitle">${greet()}, ${esc(user.name)}.</h1></header>${exampleBanner()}`;
+    if (!H.length) { r.innerHTML = head + emptyState() + inviteCard(); return; }
+    let best = null, bn = -1; H.forEach(h => { const n = currentStreak(h); if (n > bn) { bn = n; best = h; } });
+    const done = H.filter(h => (getLog(h.id, tk) || {}).s).length;
+    const strip = Array.from({ length: 30 }, (_, i) => { const l = getLog(best.id, key(addDays(now(), i - 29))); return `<i class="${l && l.s ? l.s : ''}"></i>`; }).join('');
+    // last 30 days across all habits
+    const days = Array.from({ length: 30 }, (_, i) => { const k = key(addDays(now(), i - 29)); let c = 0, x = 0, n = 0;
+      H.forEach(h => { if (k < h.start) return; n++; const l = getLog(h.id, k); if (l && l.s === 'c') c++; else if (l && l.s === 'x') x++; }); return { k, c, x, n }; });
+    const clean30 = days.reduce((a, d) => a + d.c, 0), slips30 = days.reduce((a, d) => a + d.x, 0), logged = clean30 + slips30;
+    const rate30 = logged ? Math.round(clean30 / logged * 100) : 0;
+    // slips by weekday, last 12 weeks
+    const wd = [0, 0, 0, 0, 0, 0, 0], WD = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    for (let i = 0; i < 84; i++) { const d = addDays(now(), -i), k = key(d); H.forEach(h => { const l = getLog(h.id, k); if (l && l.s === 'x') wd[(d.getDay() + 6) % 7]++; }); }
+    const wmax = Math.max(1, ...wd), hard = wd.indexOf(Math.max(...wd));
+    // habits split into going well / still working on
+    const rows = H.map(h => { const cur = currentStreak(h), rt = rate(h, 30); let slip7 = false; for (let i = 0; i < 7; i++) { const l = getLog(h.id, key(addDays(now(), -i))); if (l && l.s === 'x') slip7 = true; }
+      return { h, cur, rt, good: rt >= 80 && !slip7 }; });
+    const hrow = o => `<div class="hrow"><div class="hr-top"><b>${esc(o.h.name)}</b><span class="num">${o.cur} / ${o.h.goal} days</span></div><div class="hbar"><i style="--w:${Math.min(100, o.cur / o.h.goal * 100)}%"></i></div><small>${o.rt}% clean in the last 30 days</small></div>`;
+    const good = rows.filter(o => o.good), work = rows.filter(o => !o.good);
+    // bar chart: share of habits kept clean each day
+    const W = 300, Hh = 110, bw = W / 30;
+    const bars = days.map((d, i) => { const f = d.n ? d.c / d.n : 0, hgt = Math.max(2, f * (Hh - 10));
+      return `<rect class="anim-bar ${d.x ? 'sl' : ''}" x="${i * bw + 1.5}" y="${Hh - hgt}" width="${bw - 3}" height="${hgt}" rx="2"/>`; }).join('');
+    const wbars = wd.map((v, i) => `<div class="wdb ${i === hard && v ? 'hard' : ''}"><i class="anim-wd" style="--h:${v / wmax * 100}%"></i><span>${WD[i]}</span></div>`).join('');
     const A = window.RR_ARTICLES, tip = A[now().getDate() % A.length];
-    r.innerHTML = `<header class="vhead"><p class="eyebrow">${fmt(now(), { weekday: 'long', month: 'long', day: 'numeric' })} · ${now().toTimeString().slice(0, 5)}</p><h1 class="vtitle">${greet()}, ${esc(user.name)}.</h1></header>
-      ${exampleBanner()}
-      ${S.habits.length ? `<div class="dash">
-        <section class="glass dash-hero" data-glass="4"><div><p class="eyebrow">Longest current run</p><div class="big-n" style="margin-top:14px"><b id="home-n">0</b><span>days</span></div><p class="vsub" style="margin-top:10px">clean from ${esc(best.name.toLowerCase())} · goal ${best.goal} days</p></div>
+    r.innerHTML = head + `
+      <div class="dash">
+        <section class="glass dash-hero"><div><p class="eyebrow">Longest current run</p><div class="big-n" style="margin-top:14px"><b id="home-n">0</b><span>days</span></div><p class="vsub" style="margin-top:10px">clean from ${esc(best.name.toLowerCase())} · goal ${best.goal} days</p></div>
           <div style="display:grid;gap:14px"><div class="strip" aria-label="Last 30 days">${strip}</div>
-          <div class="actions-row"><button class="btn btn-primary" data-press data-nav="today">${done === S.habits.length ? 'Review today' : 'Check in for today'}</button><button class="btn-text" data-nav="progress">See your progress</button></div></div></section>
+          <div class="actions-row"><button class="btn btn-primary" data-press data-nav="today">${done === H.length ? 'Review today' : 'Check in for today'}</button><button class="btn-text" data-nav="progress">See your progress</button></div></div></section>
         <div class="dash-side">
-          <section class="glass card"><div class="chart-h"><h3 style="font-size:17px">Today</h3><small>${done} of ${S.habits.length} checked in</small></div><div class="status-list">${S.habits.map(h => { const l = getLog(h.id, tk) || {}; return `<div class="status"><span>${esc(h.name)}</span><em class="${l.s === 'c' ? 'c' : ''}">${l.s === 'c' ? 'Clean' : l.s === 'x' ? 'Slipped' : 'Not yet'}</em></div>`; }).join('')}</div></section>
-          <button class="glass card link-card" data-glass data-act="article" data-a="${tip.id}" style="text-align:left"><span class="eyebrow">Today's read · ${tip.min} min</span><h3>${esc(tip.t)}</h3><p>${esc(tip.d)}</p></button>
-          <a class="glass card link-card" data-glass href="community"><span class="eyebrow">Community</span><h3>Talk to people quitting the same thing</h3><p>Rooms for nail biting, porn and masturbation, smoking, late nights and wins.</p></a>
-        </div></div>` : emptyState()}`;
+          <section class="glass card"><div class="chart-h"><h3>Today</h3><small>${done} of ${H.length} checked in</small></div><div class="status-list">${H.map(h => { const l = getLog(h.id, tk) || {}; return `<div class="status"><span>${esc(h.name)}</span><em class="${l.s === 'c' ? 'c' : ''}">${l.s === 'c' ? 'Clean' : l.s === 'x' ? 'Slipped' : 'Not yet'}</em></div>`; }).join('')}</div></section>
+          ${inviteCard()}
+        </div></div>
+      <div class="stats" style="margin-top:14px">
+        <div class="glass card stat"><b data-count="${H.length}">0</b><span>Habits you're quitting</span></div>
+        <div class="glass card stat"><b data-count="${clean30}">0</b><span>Clean days, last 30 (all habits)</span></div>
+        <div class="glass card stat"><b><span data-count="${rate30}">0</span>%</b><span>Clean rate, last 30 days</span></div>
+        <div class="glass card stat"><b data-count="${slips30}">0</b><span>Slips, last 30 days</span></div></div>
+      <div class="charts">
+        <section class="glass card chart"><div class="chart-h"><h3>Every day, all habits</h3><small>share of habits kept clean, last 30 days</small></div>
+          <svg class="dash-bars" viewBox="0 0 ${W} ${Hh}" preserveAspectRatio="none" role="img" aria-label="Daily clean share, last 30 days">${bars}</svg>
+          <div class="legend"><span><i class="c"></i>Clean share</span><span><i class="sl"></i>Day with a slip</span></div></section>
+        <section class="glass card chart"><div class="chart-h"><h3>When slips happen</h3><small>last 12 weeks</small></div>
+          <div class="wdbars">${wbars}</div><p class="vsub" style="margin-top:12px">${Math.max(...wd) ? `Your hardest day is <b>${['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][hard]}</b>. Plan something for it.` : 'No slips logged in the last 12 weeks.'}</p></section>
+        <section class="glass card span2"><div class="hcols">
+          <div><div class="chart-h"><h3>Going well</h3><small>${good.length} habit${good.length === 1 ? '' : 's'} · 80%+ clean, no slip this week</small></div>${good.length ? good.map(hrow).join('') : '<p class="vsub">Nothing here yet. Keep checking in and habits move here.</p>'}</div>
+          <div><div class="chart-h"><h3>Still working on</h3><small>${work.length} habit${work.length === 1 ? '' : 's'}</small></div>${work.length ? work.map(hrow).join('') : '<p class="vsub">Every habit is on track. Nice.</p>'}</div>
+        </div></section>
+      </div>
+      <div class="dash-links">
+        <button class="glass card link-card" data-act="article" data-a="${tip.id}" style="text-align:left"><span class="eyebrow">Today's read · ${tip.min} min</span><h3>${esc(tip.t)}</h3><p>${esc(tip.d)}</p></button>
+        <a class="glass card link-card" href="community"><span class="eyebrow">Community</span><h3>Talk to people quitting the same thing</h3><p>Rooms for nail biting, porn and masturbation, smoking, late nights and wins.</p></a>
+      </div>`;
     const hn = $('#home-n'); hn && countUp(hn, bn);
-    glass(r);
+    $$('[data-count]', r).forEach(el => countUp(el, +el.dataset.count));
+    const bs = $$('.anim-bar', r), ws = $$('.anim-wd', r), hb = $$('.hbar i', r);
+    new Spring(0, { eps: .0005 }).on(p => {
+      bs.forEach((b, i) => b.style.transform = `scaleY(${clamp(p * 1.6 - i / bs.length * .6)})`);
+      ws.forEach(w => w.style.transform = `scaleY(${p})`); hb.forEach(b => b.style.transform = `scaleX(${p})`);
+    }).to(1, { response: 1, damping: 1 });
+  }
+  function inviteCard() {
+    return `<section class="glass card invite"><span class="inv-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.7-3.6 3.3-5.5 6.5-5.5s5.8 1.9 6.5 5.5"/><path d="M18.5 8v6M15.5 11h6"/></svg></span>
+      <div><h3>Invite a friend</h3><p>Quitting is easier with someone on your side. Send them a link to Re:Root.</p></div>
+      <button class="btn btn-primary btn-sm" data-press data-act="invite">Copy invite link</button></section>`;
   }
 
   /* ---------- TODAY ---------- */
@@ -339,6 +389,9 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
       case 'del-yes': S.habits = S.habits.filter(h => h.id !== id); for (const k in S.logs) delete S.logs[k][id]; confirmDel = null; save(); renderGoals(); toast('Habit deleted'); break;
       case 'clear-examples': { const names = S.habits.map(h => ({ name: h.name, goal: h.goal })); S = RRStore.blank(); names.forEach(n => S.habits.push({ id: RRStore.uid(), name: n.name, goal: n.goal, start: tk })); S.sel = S.habits[0] && S.habits[0].id; save(); for (const k in prevRing) delete prevRing[k]; RENDER[view](); toast('Examples cleared. Your habits start today.'); break; }
       case 'article': { const ar = window.RR_ARTICLES.find(x => x.id === b.dataset.a); openSheet(ar.t, `<p class="eyebrow" style="margin-bottom:10px">${esc(ar.tag)} · ${ar.min} min read</p><div class="prose">${ar.b}</div><div class="actions" style="margin-top:26px"><button class="btn btn-primary" data-press data-act="close-sheet">Done reading</button><a class="btn-text" href="articles/${ar.id}">Open as a full page</a></div>`); break; }
+      case 'invite': { const url = new URL('register', document.baseURI).href;
+        const share = () => navigator.share ? navigator.share({ title: 'Re:Root', text: 'I use Re:Root to quit habits I keep going back to. Join me:', url }).catch(() => {}) : toast(url);
+        if (navigator.clipboard) navigator.clipboard.writeText(url).then(() => { toast('Invite link copied'); b.textContent = 'Link copied'; }, share); else share(); break; }
       case 'breathe': breath.on ? stopBreath() : startBreath(); break;
       case 'enable-notif': $('#m-notif').click(); setTimeout(() => RENDER[view](), 600); break;
     }
