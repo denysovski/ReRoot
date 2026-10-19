@@ -2,93 +2,100 @@
 
 **Take control of your habits.**
 
-Re:Root is a calm, black-and-white web app for quitting the habits you keep going back to: nail biting, masturbation and porn, smoking, late-night scrolling, or anything else. You check in once a day, watch your clean days stack up, and open a short guide when an urge hits.
+Re:Root is a private habit tracker for quitting the things you keep going back to, like nail biting, porn, smoking or late-night scrolling. You check in once a day, see your streaks and patterns, and open a short guide when an urge hits.
 
-**Live demo:** https://denysovski.github.io/ReRoot/
+Live site: https://denysovski.github.io/ReRoot/
 
-> This is a demo project. Accounts, notifications and community rooms are **simulated in the browser**. Nothing is sent to a server. Don't use a password you use anywhere else.
+> Demo project. Accounts, reminders and the community chat are simulated in the browser. Nothing is sent to a server.
 
----
+![Homepage](docs/screenshots/home.png)
 
-## The idea
+## What's inside
 
-Habits have roots: the time, place, feeling or person that sets them off. Re:Root keeps the daily routine tiny (one tap, an urge rating, a note) so you can keep it up for months, then shows you the pattern behind your slips so you can plan for those moments.
+- **Daily check-in**: "Stayed clean" or "Slipped", an urge rating from 0 to 5 and a short note.
+- **Goals**: a target streak per habit and milestones from 1 to 365 days.
+- **Progress**: streak line, urge bars and a 12-week calendar.
+- **Read**: a breathing exercise and short guides on urges, triggers and slips.
+- **Community**: anonymous rooms per habit. Messages disappear after 10 minutes.
+- **Reminders**: real browser notifications at a time you choose.
 
-- **Daily check-in**: "Stayed clean" or "Slipped", an urge rating from 0 to 5 and a note about what helped. Missed a day? Fix it from the week row.
-- **Goals and milestones**: a target streak per habit (7 to 365 days) and milestones at 1, 3, 7, 14, 30, 60, 90, 180 and 365 days.
-- **Progress**: current and longest streak, clean-day rate, a streak-length line, urge bars and a 12-week calendar.
-- **Read**: a 4-4-6 breathing exercise and short guides on urges, triggers, slips, environment and when to get help.
-- **Community**: demo chat rooms per habit. Your own posts are saved locally.
-- **Reminders**: real browser notifications (with your permission) at a time you choose.
+![App, Today](docs/screenshots/app-today.png)
 
 ## Style
 
-- **Charcoal and white.** A coal-black (#111111) background with a faint hexagon texture by default, white and greys on top. A light theme and an automatic mode are one tap away.
-- **3D scenes.** A calendar, a stack of habits and a fan of phones float in 3D and tilt toward your mouse.
-- **Glass over soft light.** Translucent, blurred cards and menus float over slow-moving grey light. Data stays readable on top.
-- **Apple-style fluid motion.** Every animation is a spring (response + damping), so it can be interrupted, reversed and grabbed mid-flight. Buttons react on pointer-down. The bottom sheet tracks your finger, rubber-bands at the edge and carries your release velocity into its closing animation.
-- **One clear next step.** The positive action is always a **white pill with black text**. The negative or skip action is always **underlined text** below it ("Skip this step", "Not now").
-- **Type.** [Geist](https://vercel.com/font) for everything, Geist Mono for numbers.
-- **Reduced motion.** With "reduce motion" on, springs jump to their end state and decorative motion stops.
+The design is inspired by **Apple**: its calm, monochrome product pages, the translucent materials in iOS and macOS, and the ideas from Apple's WWDC talk *Designing Fluid Interfaces*.
 
-## Pages and URLs
+### Colours
 
-Re:Root is a **single-page app**: the site loads once, then every page swaps in instantly with a short transition. URLs are clean, with no `.html`:
+The site is black and white only. The default is a dark coal theme, with a light theme and an automatic mode in the menu.
 
-| Public site | Account | App (logged in) |
-| --- | --- | --- |
-| `/` home with 3D calendar, 3D habit stack and 3D phones | `/register` | `/app` home, `/app/today`, `/app/progress`, `/app/goals`, `/app/read` |
-| `/how-it-works` | `/login` | Top-left **RE:ROOT** pill: main site, community chats, articles |
-| `/showcase` (every screen, explained) | `/onboarding` (habits, goal, notifications, theme) | Top-right **log out** pill: theme, timezone, reminder, replay onboarding, log out |
-| `/community` | | |
-| `/articles`, `/articles/<id>` | | |
-| `/about`, `/faq`, `/contact` | | |
-| `/terms`, `/privacy` | | |
+- Background: `#111111` (coal)
+- Cards: `#191919`, raised fields `#202020`
+- Lines and empty states: `#2D2D2D`
+- Secondary text: `#9B9BA2`
+- Main text: `#F3F3F5`
+- Actions: pure white `#FFFFFF` with black text
 
-The public pages use a centered, rounded navigation bar at 70% of the page width with a big footer. Once you log in, the navigation is replaced by two rounded corner buttons and a floating tab bar at the bottom.
+White is saved for the next thing to tap. A positive action is always a **white pill button**. Skipping or a secondary action is always **plain text** that gets an underline on hover.
 
-**How clean URLs work on GitHub Pages:** GitHub Pages has no server-side routing, so opening `/ReRoot/about` directly serves `404.html`. That page stores the path and redirects to the app, which restores the URL with the History API and renders the right view. Links inside the site never reload the page.
+### Hexagon background
 
-## How the simulated accounts work
+A thin hexagon pattern (white lines at about 6% opacity) covers the background. It is strongest at the top of the page and fades toward the bottom. Around the mouse cursor the hexagon lines light up softly, brightest right under the pointer and fading out within about 190 px.
 
-- `register` stores your name, email and a SHA-256 hash of your password in `localStorage` (`reroot.users`) and starts a session (`reroot.session`).
-- `login` checks the hash. `logout` clears the session.
-- Each user's habits and check-ins live under `reroot.data.<email>`.
-- Clearing your browser's site data deletes everything.
+### Glass over soft light
 
-## Project structure
+Navigation, menus, cards and tooltips are frosted glass: a semi-transparent surface with a background blur, a thin light edge and a soft shadow. This comes from Apple's translucent materials, the layered glass you see in iOS and macOS bars and sheets. Cards also tilt slightly toward the mouse and catch a soft highlight where the pointer is.
 
-```
-index.html                  the single page: loads styles and scripts once
-404.html                    GitHub Pages fallback that hands deep links to the app
-serve.py                    local server that behaves like GitHub Pages
-assets/css/base.css         tokens, buttons, glass cards, nav, footer, menus
-assets/css/pages.css        public pages, 3D scenes, showcase, auth, onboarding
-assets/css/app.css          logged-in app
-assets/js/core.js           springs, press feedback, theme, simulated auth, menus, toast
-assets/js/views.js          HTML templates for every view
-assets/js/spa.js            router: clean URLs, auth guards, transitions
-assets/js/site.js           public layout, reveal, word fill, 3D scenes
-assets/js/pages.js          behaviour for articles, community, contact, login, register
-assets/js/data.js           guides shared by Articles and the Read tab
-assets/js/store.js          per-user data and example history
-assets/js/onboarding.js     onboarding flow (incl. Notification permission)
-assets/js/app.js            the tracker
-```
+### Fluid motion
 
-No framework and no build step. Plain HTML, CSS and JavaScript.
+Motion follows Apple's *Designing Fluid Interfaces* principles:
 
-## Run locally
+- Every animation is a **spring** (response and damping) instead of a fixed duration, so it can be interrupted and reversed at any moment.
+- Buttons react the instant you press them, not on release.
+- The bottom sheet in the app follows your finger, stretches with resistance at the edge and keeps your release speed when it closes.
+- Content slides in from the left and right, or rises toward you from depth, as you scroll.
+- The navigation bar zooms out while scrolling down and back in when scrolling up.
+- With "reduce motion" switched on, everything appears instantly instead.
 
-```bash
-git clone https://github.com/denysovski/ReRoot.git
-cd ReRoot
-python3 serve.py
-# open http://localhost:8000
-```
+### 3D scenes
 
-Notifications need a secure context, which `localhost` and GitHub Pages both provide.
+Real CSS 3D (perspective and `preserve-3d`), no images or libraries. Each scene tilts toward the mouse, floats gently when idle, and returns smoothly 1.5 seconds after the mouse leaves.
+
+- **Calendar** on the homepage: clean days raised off the page, today floating highest, with streak, check-in and urge chips around it.
+- **Habit list**: a stack of habit rows with streak rings and a week of check-ins, which spreads apart on hover.
+
+![3D habit list](docs/screenshots/habit-list-3d.png)
+
+- **Phones**: three app screens (reminder, Today, Progress) fanned out in space.
+
+![3D phones](docs/screenshots/phones-3d.png)
+
+- **Showcase**: every app screen on its own tilted phone, with a white frame in dark mode.
+
+![Showcase](docs/screenshots/showcase.png)
+
+- **About**: three stacked message cards in perspective, plus team portraits angled left and right.
+
+![About](docs/screenshots/about-3d.png)
+
+### Type
+
+[Geist](https://vercel.com/font) for everything, Geist Mono for numbers. Headings are large and tightly spaced, body text is calm and grey.
+
+## Pages
+
+- `/`: homepage
+- `/how-it-works`: the five steps
+- `/showcase`: every app screen, explained
+- `/community`: chat rooms
+- `/articles` and `/articles/<id>`: guides
+- `/about`: mission, team and partners
+- `/faq`, `/contact`, `/terms`, `/privacy`
+- `/register`, `/login`, `/onboarding`
+- `/app`, `/app/today`, `/app/progress`, `/app/goals`, `/app/read`: the tracker
+
+It is a single-page app with clean URLs, built with plain HTML, CSS and JavaScript, with no framework and no build step. Everything is stored in your browser's local storage.
 
 ## Disclaimer
 
-Re:Root is a self-tracking tool, not medical care. If a habit is harming your health or you can't stop despite trying, talk to a doctor or therapist. In a crisis, contact your local emergency number.
+Re:Root is a self-tracking tool, not medical care. If a habit is harming your health, talk to a doctor or therapist.
