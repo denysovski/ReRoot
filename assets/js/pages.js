@@ -19,6 +19,42 @@
   RR.helped = { helpBtn, toggleHelped };
 
   RR.pages = {
+    showcase(root, params, signal) {
+      // each phone plays its screen as you scroll past it (p: 0 -> 1)
+      const clamp = v => Math.max(0, Math.min(1, v)), seg = (p, a, b) => clamp((p - a) / (b - a));
+      const rows = $$('[data-sc]', root).map(row => ({ row, kind: row.dataset.sc, phone: $('.phone', row), last: -1 }));
+      const draw = {
+        login(r, p) { const em = $('[data-type]', r.row), pw = $('[data-dots]', r.row), btn = $('.sc-btn', r.row), t = em.dataset.type;
+          const ne = Math.round(t.length * seg(p, .08, .42)), np = Math.round(+pw.dataset.dots * seg(p, .46, .62));
+          em.textContent = t.slice(0, ne); pw.textContent = '•'.repeat(np);
+          em.classList.toggle('typing', ne > 0 && ne < t.length); pw.classList.toggle('typing', np > 0 && np < +pw.dataset.dots);
+          btn.classList.toggle('pressed', p > .68 && p < .76); btn.classList.toggle('done', p >= .76); },
+        notif(r, p) { $('.sc-btn', r.row).classList.toggle('pressed', p > .45 && p < .55); $('.sc-toast', r.row).classList.toggle('show', p >= .55); },
+        today(r, p) {
+          $$('[data-hab]', r.row).forEach((c, k) => { const on = p >= (k ? .72 : .42), base = k ? 57 : 71;
+            $('.m-btns span', c).classList.toggle('on', on); $$('.m-dots i', c)[5].classList.toggle('c', on);
+            $('.m-ring', c).style.setProperty('--rp', (on ? base + 14 : base) + '%'); }); },
+        progress(r, p) { const q = seg(p, .1, .85); $('[data-count]', r.row).textContent = Math.round(23 * q);
+          $('.sc-line', r.row).style.strokeDashoffset = 1 - q;
+          $$('.sc-bars i', r.row).forEach((b, k) => b.style.transform = `scaleY(${seg(p, .05 + k * .05, .45 + k * .05)})`); },
+        goals(r, p) { const q = seg(p, .1, .85), days = Math.round(23 * q);
+          $('.sc-goal', r.row).style.setProperty('--rp', (76 * q) + '%'); $$('[data-days]', r.row).forEach(d => d.textContent = days);
+          $$('.sc-gdots i', r.row).forEach((d, k) => d.classList.toggle('c', k < 5 && q > (k + 1) / 6)); },
+        read() {}
+      };
+      const still = RR.motion.reduce;
+      const tick = () => { const vh = innerHeight;
+        rows.forEach(r => { const b = r.phone.getBoundingClientRect(); if (b.bottom < -200 || b.top > vh + 200) return;
+          const c = (b.top + b.bottom) / 2, p = still ? 1 : clamp((vh * .95 - c) / (vh * .6)); if (Math.abs(p - r.last) < .002) return; r.last = p; draw[r.kind](r, p); }); };
+      let raf = 0; const req = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; tick(); }); };
+      addEventListener('scroll', req, { passive: true, signal }); addEventListener('resize', req, { signal }); tick();
+      // breathing: in 4, hold 4, out 6, with a live countdown
+      const br = $('.sc-breathe', root);
+      if (br) { const txt = $('.br-text', br), ph = [['Breathe in', 4, 'in'], ['Hold', 4, 'hold'], ['Breathe out', 6, 'out']]; let i = 0, left = 4;
+        const show = () => { txt.textContent = `${ph[i][0]} · ${left}`; br.dataset.phase = ph[i][2]; br.style.setProperty('--dur', ph[i][1] + 's'); };
+        show(); const id = setInterval(() => { if (--left <= 0) { i = (i + 1) % 3; left = ph[i][1]; } show(); }, 1000);
+        signal.addEventListener('abort', () => clearInterval(id)); }
+    },
     faq(root, params, signal) {
       $$('.faq details', root).forEach(d => {
         const sum = $('summary', d), ans = $('.ans', d), wrap = document.createElement('div'); wrap.className = 'ans-wrap'; ans.before(wrap); wrap.appendChild(ans);

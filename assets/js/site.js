@@ -103,7 +103,53 @@
     requestAnimationFrame(() => cal.classList.add('built'));
   }
 
+  /* a line that links a section heading to each row below it and draws itself as you scroll (desktop) */
+  function thread(root, signal) {
+    $$('[data-thread]', root).forEach(rows => {
+      const host = rows.parentElement, head = $('.sec-head h2', host); if (!head) return;
+      host.classList.add('thread-host');
+      const NS = 'http://www.w3.org/2000/svg', svg = document.createElementNS(NS, 'svg'); svg.classList.add('thread'); svg.setAttribute('aria-hidden', 'true');
+      const path = document.createElementNS(NS, 'path'); svg.appendChild(path); host.appendChild(svg);
+      let L = 0, marks = [], end = null, on = false;
+      const build = () => {
+        on = innerWidth > 900; svg.style.display = on ? '' : 'none'; if (!on) return;
+        // layout offsets ignore the scroll-in transforms, so the line lands where things end up
+        const off = el => { let x = 0, y = 0; for (let e = el; e; e = e.offsetParent) { x += e.offsetLeft; y += e.offsetTop; } return [x, y]; };
+        const [hx, hy] = off(host), hb = { width: host.offsetWidth, height: host.offsetHeight };
+        const rel = el => { const [x, y] = off(el); return { l: x - hx, t: y - hy, b: y - hy + el.offsetHeight, r: x - hx + el.offsetWidth }; };
+        svg.setAttribute('width', hb.width); svg.setAttribute('height', hb.height); svg.setAttribute('viewBox', `0 0 ${hb.width} ${hb.height}`);
+        const h = rel(head), heads = $$('.alt-text h3', rows).map(rel), rowsR = $$('.alt-row', rows).map(rel), G = 30;
+        const pts = [[h.l - G, h.t + (h.b - h.t) / 2]]; let y0 = h.b + (rowsR[0].t - h.b) / 2;
+        const anchors = [pts[0]];
+        heads.forEach((hh, k) => { const x = hh.l - G, y = hh.t + (hh.b - hh.t) / 2, prev = pts[pts.length - 1];
+          if (Math.abs(prev[0] - x) > 1) { pts.push([prev[0], y0], [x, y0]); } pts.push([x, y]); anchors.push([x, y]);
+          y0 = k < rowsR.length - 1 ? rowsR[k].b + (rowsR[k + 1].t - rowsR[k].b) / 2 : rowsR[k].b + 40; });
+        const lastX = pts[pts.length - 1][0]; pts.push([lastX, y0]); end = [lastX, y0];
+        // orthogonal polyline with rounded corners
+        const R = 28; let d = `M${pts[0][0]} ${pts[0][1]}`;
+        for (let i = 1; i < pts.length; i++) { const [x, y] = pts[i], nx = pts[i + 1];
+          if (!nx) { d += ` L${x} ${y}`; break; }
+          const [px, py] = pts[i - 1], dx1 = Math.sign(x - px), dy1 = Math.sign(y - py), dx2 = Math.sign(nx[0] - x), dy2 = Math.sign(nx[1] - y);
+          const r = Math.min(R, Math.abs(x - px || y - py) / 2, Math.abs(nx[0] - x || nx[1] - y) / 2);
+          d += ` L${x - dx1 * r} ${y - dy1 * r} Q${x} ${y} ${x + dx2 * r} ${y + dy2 * r}`; }
+        path.setAttribute('d', d); L = path.getTotalLength(); path.style.strokeDasharray = L;
+        $$('circle', svg).forEach(c => c.remove());
+        marks = anchors.map(([x, y]) => { const c = document.createElementNS(NS, 'circle'); c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', 6); svg.appendChild(c); return { c, y }; });
+        const e = document.createElementNS(NS, 'circle'); e.setAttribute('cx', end[0]); e.setAttribute('cy', end[1]); e.setAttribute('r', 11); e.classList.add('end'); svg.appendChild(e);
+        marks.push({ c: e, y: end[1] }); draw();
+      };
+      const draw = () => { if (!on || !L) return;
+        const target = innerHeight * .6 - host.getBoundingClientRect().top;
+        let lo = 0, hi = L; if (RR.motion.reduce) lo = L; else for (let i = 0; i < 22; i++) { const m = (lo + hi) / 2; if (path.getPointAtLength(m).y <= target) lo = m; else hi = m; }
+        path.style.strokeDashoffset = L - lo; marks.forEach(m => m.c.classList.toggle('on', m.y <= target + 1 || RR.motion.reduce)); };
+      let raf = 0; addEventListener('scroll', () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; draw(); }); }, { passive: true, signal });
+      const ro = new ResizeObserver(() => build()); ro.observe(host); signal.addEventListener('abort', () => ro.disconnect());
+      setTimeout(build, 900);
+    });
+  }
+
   function enhance(root, signal) {
+    thread(root, signal);
     const user = auth.current();
     if (user) $$('[data-guest]', root).forEach(el => el.innerHTML = `<a class="btn btn-primary" data-press href="app">Open the app</a><a class="btn-text" href="app/today">Go to today's check-in</a>`);
     glass(root);
@@ -189,7 +235,7 @@
     // community: avatars slide in and the member count climbs
     $$('[data-crowd]', root).forEach(cw => {
       const n = $('[data-count-to]', cw), to = +n.dataset.countTo; cw.classList.add('go');
-      new Spring(0, { eps: .0002 }).on(p => { n.textContent = Math.round(1000 + (to - 1000) * p).toLocaleString('en-US'); }).to(1, { response: .75, damping: 1 });
+      new Spring(0, { eps: .0005 }).on(p => { n.textContent = Math.round(to * p) + 'k'; }).to(1, { response: .9, damping: 1 });
     });
     const els = $$('[data-ring-anim], [data-strip-anim]', root); if (!els.length) return;
     const run = el => {
