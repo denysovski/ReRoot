@@ -25,7 +25,7 @@
     <main id="view"></main>
     <footer class="footer"><div class="wrap">
       <div class="f-top">
-        <div class="f-brand"><a class="logo" href="./" style="font-size:20px">RE<b>:</b>ROOT</a>
+        <div class="f-brand"><a class="logo" href="./">RE<b>:</b>ROOT</a>
           <p>A calm, black-and-white tracker for quitting the habits that hold you back. Check in daily, see your patterns and get help when it's hard.</p>
           <div class="actions-row">${user ? '<a class="btn btn-primary btn-sm" data-press href="app">Open app</a>' : '<a class="btn btn-primary btn-sm" data-press href="register">Get started</a><a class="btn-text" href="login">Log in</a>'}</div></div>
         ${col('Product', [['how-it-works', 'How it works'], ['showcase', 'Showcase'], ['articles', 'Articles'], ['community', 'Community chats']])}
@@ -33,7 +33,6 @@
         ${col('Legal', [['terms', 'Terms & conditions'], ['privacy', 'Privacy policy'], ['terms#disclaimer', 'Medical disclaimer']])}
         ${col('Account', user ? [['app', 'Open app'], ['app/today', 'Today\'s check-in'], ['app/progress', 'Your progress']] : [['login', 'Log in'], ['register', 'Create account'], ['how-it-works', 'Getting started']])}
       </div>
-      <p class="f-help">Re:Root is a self-tracking tool, not medical care. If a habit is harming your health or you can't stop despite trying, talk to a doctor or therapist. In a crisis, contact your local emergency number.</p>
       <div class="f-bottom"><span>© 2026 Re:Root · Demo project. Accounts are simulated and stored only in your browser.</span><button class="btn-text" id="to-top">Back to top</button></div>
     </div></footer>`;
   }
@@ -108,7 +107,7 @@
       if (!mode) {
         const par = el.parentElement, sibs = [...par.children].filter(c => c.hasAttribute('data-reveal'));
         if (el.classList.contains('scene-host')) mode = 'depth';
-        else if (par.matches('.split, .show-row')) mode = [...par.children].indexOf(el) === 0 ? (par.matches('.rev') && par.matches('.show-row') ? 'right' : 'left') : 'right';
+        else if (par.matches('.split, .show-row, .member')) { const r = el.getBoundingClientRect(), pr = par.getBoundingClientRect(); mode = (r.left + r.width / 2) < (pr.left + pr.width / 2) ? 'left' : 'right'; }
         else if (par.matches('.grid-3, .rhythm, .team, .bento, .logos')) { const cols = par.matches('.logos') ? 4 : 3, k = sibs.indexOf(el) % cols; mode = cols === 4 ? ['left', 'depth', 'depth', 'right'][k] : ['left', 'depth', 'right'][k]; }
         else if (par.matches('.grid-2')) mode = sibs.indexOf(el) % 2 ? 'right' : 'left';
         else if (par.matches('.faq, .steps')) mode = sibs.indexOf(el) % 2 ? 'right' : 'left';

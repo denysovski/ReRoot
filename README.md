@@ -23,7 +23,7 @@ Habits have roots: the time, place, feeling or person that sets them off. Re:Roo
 
 ## Style
 
-- **Charcoal and white.** A near-black (#0a0a0a) background by default, white and greys on top. A light theme and an automatic mode are one tap away.
+- **Charcoal and white.** A coal-black (#111111) background with a faint hexagon texture by default, white and greys on top. A light theme and an automatic mode are one tap away.
 - **3D scenes.** A calendar, a stack of habits and a fan of phones float in 3D and tilt toward your mouse.
 - **Glass over soft light.** Translucent, blurred cards and menus float over slow-moving grey light. Data stays readable on top.
 - **Apple-style fluid motion.** Every animation is a spring (response + damping), so it can be interrupted, reversed and grabbed mid-flight. Buttons react on pointer-down. The bottom sheet tracks your finger, rubber-bands at the edge and carries your release velocity into its closing animation.
