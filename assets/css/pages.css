@@ -711,3 +711,17 @@
 @media (max-width:620px){.phones3d{height:440px}.phones3d .phone{width:180px;margin-left:-90px}
   .phones3d .p1{transform:translateX(-100px) translateZ(-120px) rotateY(22deg)}.phones3d .p3{transform:translateX(100px) translateZ(-120px) rotateY(-22deg)}
   .split.rev:has(.phones3d) .scene-host{min-height:460px}}
+/* desktop landing: fill the window, larger type, calendar and buttons */
+@media (min-width:921px){
+  .hero{min-height:calc(100vh - 100px - env(safe-area-inset-top,0px));min-height:calc(100svh - 100px - env(safe-area-inset-top,0px));padding-block:20px 60px;align-content:center}
+  .hero h1{font-size:clamp(56px,6vw,96px)}
+  .hero .lead{font-size:clamp(20px,1.7vw,24px);max-width:30ch}
+  .hero-copy{gap:28px}
+  .hero .btn{height:58px;padding:0 32px;font-size:17px}
+  .hero .btn-text{font-size:17px}
+  .hero .pill-note{height:38px;font-size:14.5px}
+  .cal3d{min-height:620px;padding-top:40px}
+  .cal3d .cal-scene{width:min(480px,40vw)}
+  .cal3d .cal-chip{padding:14px 20px}
+  .cal3d .cal-chip b{font-size:19px}
+}
