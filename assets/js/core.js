@@ -82,26 +82,31 @@
   const tzGuess = () => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch (e) { return 'UTC'; } };
   const auth = {
     users() { return ls.get('reroot.users', {}); },
-    current() { const e = ls.get('reroot.session'); return e ? this.users()[e] || null : null; },
-    async register({ name, email, password }) {
-      name = (name || '').trim(); email = (email || '').trim().toLowerCase();
-      if (!name) return { error: 'Enter your name so we know what to call you.', field: 'name' };
+    session() { let e = ls.get('reroot.session'); if (!e) { try { e = JSON.parse(sessionStorage.getItem('reroot.session')); } catch (x) { e = null; } } return e; },
+    startSession(email, remember) { ls.del('reroot.session'); try { sessionStorage.removeItem('reroot.session'); } catch (x) {}
+      if (remember) ls.set('reroot.session', email); else try { sessionStorage.setItem('reroot.session', JSON.stringify(email)); } catch (x) { ls.set('reroot.session', email); } },
+    current() { const e = this.session(); return e ? this.users()[e] || null : null; },
+    async register({ email, password, confirm, remember = true }) {
+      email = (email || '').trim().toLowerCase();
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: 'Enter an email address like name@example.com.', field: 'email' };
       if ((password || '').length < 6) return { error: 'Use at least 6 characters for your password.', field: 'password' };
+      if (confirm !== undefined && confirm !== password) return { error: 'The passwords don\'t match. Type the same password twice.', field: 'confirm' };
       const users = this.users();
       if (users[email]) return { error: 'An account with this email already exists. Log in instead.', field: 'email' };
+      const base = email.split('@')[0].replace(/[._\-+\d]+/g, ' ').trim() || 'friend';
+      const name = base.split(' ')[0].replace(/^./, c => c.toUpperCase());
       users[email] = { name, email, pass: await hash(password), created: Date.now(), prefs: { tz: tzGuess(), notif: false, reminder: '20:00', onboarded: false } };
-      ls.set('reroot.users', users); ls.set('reroot.session', email);
+      ls.set('reroot.users', users); this.startSession(email, remember);
       return { user: users[email] };
     },
-    async login({ email, password }) {
+    async login({ email, password, remember = true }) {
       email = (email || '').trim().toLowerCase();
       const u = this.users()[email];
       if (!u) return { error: 'No account uses this email. Check the spelling or create an account.', field: 'email' };
       if (u.pass !== await hash(password || '')) return { error: 'That password doesn\'t match. Try again.', field: 'password' };
-      ls.set('reroot.session', email); return { user: u };
+      this.startSession(email, remember); return { user: u };
     },
-    logout() { ls.del('reroot.session'); },
+    logout() { ls.del('reroot.session'); try { sessionStorage.removeItem('reroot.session'); } catch (x) {} },
     update(patch) { const u = this.current(); if (!u) return; const users = this.users(); users[u.email] = { ...u, ...patch, prefs: { ...u.prefs, ...(patch.prefs || {}) } }; ls.set('reroot.users', users); return users[u.email]; },
     require(next = 'login.html') { const u = this.current(); if (!u) { location.replace(next); return null; } return u; }
   };
@@ -168,17 +173,6 @@
   const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
   const fromKey = k => { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d); };
   const fmt = (d, o) => d.toLocaleDateString('en-US', o);
-
-  /* ---------- cursor shine: background brightens softly around the pointer ---------- */
-  if (matchMedia('(hover: hover) and (pointer: fine)').matches) {
-    const sh = document.createElement('div'); sh.className = 'shine'; sh.setAttribute('aria-hidden', 'true');
-    const amb = document.querySelector('.ambient'); amb ? amb.after(sh) : document.body.prepend(sh);
-    const sx = new Spring(innerWidth / 2, { eps: .2 }), sy = new Spring(innerHeight / 2, { eps: .2 });
-    const paint = () => { sh.style.setProperty('--sx', sx.value + 'px'); sh.style.setProperty('--sy', sy.value + 'px'); };
-    sx.on(paint); sy.on(paint);
-    addEventListener('pointermove', e => { sh.classList.add('on'); sx.to(e.clientX, { response: .45, damping: 1 }); sy.to(e.clientY, { response: .45, damping: 1 }); }, { passive: true });
-    document.documentElement.addEventListener('pointerleave', () => sh.classList.remove('on'));
-  }
 
   window.RR = { $, $$, clamp, esc, ls, motion, Spring, tracker, project, rubber, theme, auth, menu, closeAll, toast, glass, key, addDays, fromKey, fmt, tzGuess };
 })();

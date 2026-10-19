@@ -62,7 +62,7 @@
     login(root, params, signal) {
       pwToggle(root, signal);
       $('#login', root).addEventListener('submit', async e => { e.preventDefault();
-        const r = await auth.login({ email: $('#l-email').value, password: $('#l-pass').value });
+        const r = await auth.login({ email: $('#l-email').value, password: $('#l-pass').value, remember: $('#l-remember').checked });
         if (r.error) { showErr('#l-err', r.error); $(r.field === 'password' ? '#l-pass' : '#l-email').focus(); return; }
         go(r.user.prefs.onboarded ? 'app/today' : 'onboarding'); });
     },
@@ -70,9 +70,8 @@
       pwToggle(root, signal);
       $('#r-pass', root).addEventListener('input', e => { const v = e.target.value; let s = 0; if (v.length >= 6) s++; if (v.length >= 10) s++; if (/[A-Z]/.test(v) && /[a-z]/.test(v)) s++; if (/[\d\W]/.test(v)) s++; $('#r-str').style.width = (s / 4 * 100) + '%'; });
       $('#register', root).addEventListener('submit', async e => { e.preventDefault();
-        if (!$('#r-terms').checked) { showErr('#r-err', 'Agree to the terms to create an account.'); return; }
-        const r = await auth.register({ name: $('#r-name').value, email: $('#r-email').value, password: $('#r-pass').value });
-        if (r.error) { showErr('#r-err', r.error); $({ name: '#r-name', email: '#r-email', password: '#r-pass' }[r.field] || '#r-name').focus(); return; }
+        const r = await auth.register({ email: $('#r-email').value, password: $('#r-pass').value, confirm: $('#r-pass2').value, remember: $('#r-remember').checked });
+        if (r.error) { showErr('#r-err', r.error); $({ email: '#r-email', password: '#r-pass', confirm: '#r-pass2' }[r.field] || '#r-email').focus(); return; }
         go('onboarding'); });
     },
   };
