@@ -155,11 +155,11 @@
   /* ---------- CTA carousel: slides move right to left, arrows + timed indicators ---------- */
   function carousel(c, signal) {
     const track = $('.car-track', c), slides = $$('.car-slide', c), dots = $('.car-dots', c), N = slides.length, DUR = 7000, C = 2 * Math.PI * 9;
-    dots.innerHTML = slides.map((_, i) => `<button class="car-dot" data-i="${i}" aria-label="Show slide ${i + 1}"><svg viewBox="0 0 24 24"><circle class="t" cx="12" cy="12" r="9"/><circle class="a" cx="12" cy="12" r="9" stroke-dasharray="${C}" stroke-dashoffset="${C}"/></svg></button>`).join('');
+    dots.innerHTML = slides.map((_, i) => `<button class="car-dot" data-i="${i}" aria-label="Show slide ${i + 1}"><span class="fill"></span></button>`).join('');
     const pos = new Spring(0, { eps: .0005 }); let idx = 0, t0 = 0, started = false, paused = false, pauseAt = 0;
     pos.on(v => { track.style.transform = `translateX(${-v * 100}%)`; slides.forEach((sl, i) => { const d = Math.abs(i - v); sl.style.opacity = Math.max(0, 1 - d * 1.2); sl.style.filter = d > .02 && !motion.reduce ? `blur(${Math.min(8, d * 10)}px)` : ''; }); });
     pos.set(0);
-    const paint = p => $$('.car-dot', c).forEach((d, i) => { d.classList.toggle('on', i === idx); d.querySelector('.a').style.strokeDashoffset = C * (1 - (i === idx ? p : 0)); });
+    const paint = p => $$('.car-dot', c).forEach((d, i) => { d.classList.toggle('on', i === idx); d.firstChild.style.transform = `scaleX(${i === idx ? Math.max(0, Math.min(1, p)) : 0})`; });
     const go = i => { idx = (i + N) % N; pos.to(idx, { response: .6, damping: 1 }); t0 = performance.now(); paint(0); };
     c.addEventListener('click', e => { const b = e.target.closest('[data-car], .car-dot'); if (!b) return; if (b.dataset.car === 'prev') go(idx - 1); else if (b.dataset.car === 'next') go(idx + 1); else go(+b.dataset.i); }, { signal });
     c.addEventListener('pointerenter', () => { paused = true; pauseAt = performance.now(); }, { signal });
