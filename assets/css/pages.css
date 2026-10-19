@@ -693,3 +693,21 @@
 /* showcase phones: white frame in dark mode */
 :root[data-theme="dark"] .show-row .phone{background:#f2f2f4;box-shadow:0 0 0 1px rgba(255,255,255,.5),0 60px 90px -40px rgba(0,0,0,.8)}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .show-row .phone{background:#f2f2f4;box-shadow:0 0 0 1px rgba(255,255,255,.5),0 60px 90px -40px rgba(0,0,0,.8)}}
+/* hero: always two lines on desktop, short lead */
+.hero h1 .nw{white-space:nowrap}
+.hero h1{font-size:clamp(40px,4.9vw,76px)}
+.hero .lead{max-width:36ch}
+@media (max-width:620px){.hero h1 .nw{white-space:normal}}
+/* home 3D phones 20% larger */
+.phones3d{width:min(680px,94vw);height:680px}
+.phones3d .phone{width:276px;margin-left:-138px}
+.phones3d .p1{transform:translateX(-192px) translateZ(-160px) rotateY(22deg)}
+.phones3d .p3{transform:translateX(192px) translateZ(-160px) rotateY(-22deg)}
+.phones3d .p2{transform:translateZ(48px)}
+.scene-host:hover .phones3d .p1{transform:translateX(-240px) translateZ(-140px) rotateY(16deg)}
+.scene-host:hover .phones3d .p3{transform:translateX(240px) translateZ(-140px) rotateY(-16deg)}
+.scene-host:hover .phones3d .p2{transform:translateZ(100px)}
+.split.rev:has(.phones3d) .scene-host{min-height:700px}
+@media (max-width:620px){.phones3d{height:440px}.phones3d .phone{width:180px;margin-left:-90px}
+  .phones3d .p1{transform:translateX(-100px) translateZ(-120px) rotateY(22deg)}.phones3d .p3{transform:translateX(100px) translateZ(-120px) rotateY(-22deg)}
+  .split.rev:has(.phones3d) .scene-host{min-height:460px}}
