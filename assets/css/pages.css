@@ -1024,3 +1024,27 @@
 :root[data-theme="light"] .car-dot.on{box-shadow:inset 0 0 0 1.5px #8a8a90}
 @media (prefers-color-scheme: light){:root:not([data-theme="dark"]) .car-dot.on{box-shadow:inset 0 0 0 1.5px #8a8a90}}
 .broken > span{animation-delay:.5s}
+
+/* light mode: filled indicators flip to black so they show on white cards */
+:root[data-theme="light"] .week-days .dd i.c,
+:root[data-theme="light"] .fs-strip i:not(.x),
+:root[data-theme="light"] .fs-seg i.on,
+:root[data-theme="light"] .fs-pill.on,
+:root[data-theme="light"] .m-btns span.on,
+:root[data-theme="light"] .hc-row .chip[aria-pressed="true"],
+:root[data-theme="light"] .step-vis .chip[aria-pressed="true"],
+:root[data-theme="light"] .sc-toast .ti,
+:root[data-theme="light"] .fs-ic,
+:root[data-theme="light"] .m-white{background:var(--fg);color:var(--bg);box-shadow:none}
+@media (prefers-color-scheme: light){
+:root:not([data-theme="dark"]) .week-days .dd i.c,
+:root:not([data-theme="dark"]) .fs-strip i:not(.x),
+:root:not([data-theme="dark"]) .fs-seg i.on,
+:root:not([data-theme="dark"]) .fs-pill.on,
+:root:not([data-theme="dark"]) .m-btns span.on,
+:root:not([data-theme="dark"]) .hc-row .chip[aria-pressed="true"],
+:root:not([data-theme="dark"]) .step-vis .chip[aria-pressed="true"],
+:root:not([data-theme="dark"]) .sc-toast .ti,
+:root:not([data-theme="dark"]) .fs-ic,
+:root:not([data-theme="dark"]) .m-white{background:var(--fg);color:var(--bg);box-shadow:none}
+}
