@@ -946,13 +946,13 @@
 
 /* ---------- showcase: thread linking the design rows ---------- */
 .thread-host{position:relative}
-.thread{position:absolute;left:0;top:0;pointer-events:none;overflow:visible;z-index:0}
-.thread path{fill:none;stroke:var(--fg);stroke-width:2;opacity:.55;stroke-linecap:round}
-.thread circle{fill:var(--bg);stroke:var(--fg);stroke-width:2;opacity:.3;transition:opacity .4s,fill .4s}
-.thread circle.on{opacity:1;fill:var(--fg)}
-.thread circle.end{fill:var(--bg);stroke-width:2}
-.thread circle.end.on{fill:var(--bg);stroke-width:5}
-.thread-host > :not(.thread){position:relative;z-index:1}
+.sthread{position:absolute;left:0;top:0;pointer-events:none;overflow:visible;z-index:0}
+.sthread path{fill:none;stroke:var(--fg);stroke-width:2;opacity:.55;stroke-linecap:round}
+.sthread circle{fill:var(--bg);stroke:var(--fg);stroke-width:2;opacity:.3;transition:opacity .4s,fill .4s}
+.sthread circle.on{opacity:1;fill:var(--fg)}
+.sthread circle.end{fill:var(--bg);stroke-width:2}
+.sthread circle.end.on{fill:var(--bg);stroke-width:5}
+.thread-host > :not(.sthread){position:relative;z-index:1}
 
 /* ---------- community fixes ---------- */
 .cav,.cav:nth-child(even){position:relative;display:block}
@@ -985,3 +985,31 @@
 @media (min-width:861px){.auth{margin-top:-100px;padding-block:96px 40px;min-height:100svh;align-content:center;place-items:center}}
 @media (min-width:861px){.auth{padding-block:60px}}
 @media (min-width:861px){#view > section.auth{padding-block:60px}}
+
+/* ---------- round 3 fixes ---------- */
+.cal-plate.glass::before{background:var(--surface);backdrop-filter:none;-webkit-backdrop-filter:none}
+.cal-plate.back{background:var(--raised);opacity:1}
+.chip:not([aria-pressed="true"]){background:var(--raised)}
+.step-icon .bg-icon.calm{transform:translateY(-64%)}
+.br-wrap{width:24cqw;height:24cqw;margin:1cqw 0}
+.br-dot{transform:scale(.6)}
+.sc-breathe[data-phase="in"] .br-dot,.sc-breathe[data-phase="hold"] .br-dot{transform:scale(.9)}
+.sc-breathe[data-phase="in"] .br-halo,.sc-breathe[data-phase="hold"] .br-halo{transform:scale(1)}
+@keyframes brPulse{to{transform:scale(1.05);opacity:.2}}
+.br-text{white-space:nowrap}
+.crowd p b{font-family:var(--f-sans,inherit);font-weight:650;letter-spacing:-.03em}
+.cav{width:37px;height:37px;margin-left:-7px}
+.cav:first-child{margin-left:0}
+.faq-left .fs:nth-child(1){margin-left:-50px;margin-right:60px;rotate:-6deg}
+.faq-left .fs:nth-child(2){margin-left:70px;margin-right:-40px;margin-top:200px;rotate:5deg}
+.faq-left .fs:nth-child(3){margin-left:-30px;margin-right:50px;margin-top:190px;rotate:-3deg}
+.faq-right .fs:nth-child(1){margin-left:70px;margin-right:-50px;margin-top:60px;rotate:6deg}
+.faq-right .fs:nth-child(2){margin-left:-40px;margin-right:70px;margin-top:180px;rotate:-5deg}
+.faq-right .fs:nth-child(3){margin-left:60px;margin-right:-40px;margin-top:200px;rotate:3deg}
+.faq-right .fs:nth-child(4){margin-left:-20px;margin-right:50px;margin-top:170px;rotate:-7deg}
+@media (max-width:1320px){.faq-side .fs{margin-left:0!important;margin-right:0!important}}
+@media (min-width:861px){.auth-shell{margin-top:40px}.reg-shell{margin-top:100px}}
+.faq-side .fs{margin-left:0!important;margin-right:0!important;position:relative}
+.faq-left .fs:nth-child(1){left:-70px}.faq-left .fs:nth-child(2){left:6px}.faq-left .fs:nth-child(3){left:-45px}
+.faq-right .fs:nth-child(1){left:65px}.faq-right .fs:nth-child(2){left:-6px}.faq-right .fs:nth-child(3){left:45px}.faq-right .fs:nth-child(4){left:10px}
+@media (max-width:1320px){.faq-side .fs{left:0!important}}

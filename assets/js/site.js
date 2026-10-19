@@ -108,7 +108,7 @@
     $$('[data-thread]', root).forEach(rows => {
       const host = rows.parentElement, head = $('.sec-head h2', host); if (!head) return;
       host.classList.add('thread-host');
-      const NS = 'http://www.w3.org/2000/svg', svg = document.createElementNS(NS, 'svg'); svg.classList.add('thread'); svg.setAttribute('aria-hidden', 'true');
+      const NS = 'http://www.w3.org/2000/svg', svg = document.createElementNS(NS, 'svg'); svg.classList.add('sthread'); svg.setAttribute('aria-hidden', 'true');
       const path = document.createElementNS(NS, 'path'); svg.appendChild(path); host.appendChild(svg);
       let L = 0, marks = [], end = null, on = false;
       const build = () => {
@@ -119,7 +119,8 @@
         const rel = el => { const [x, y] = off(el); return { l: x - hx, t: y - hy, b: y - hy + el.offsetHeight, r: x - hx + el.offsetWidth }; };
         svg.setAttribute('width', hb.width); svg.setAttribute('height', hb.height); svg.setAttribute('viewBox', `0 0 ${hb.width} ${hb.height}`);
         const h = rel(head), heads = $$('.alt-text h3', rows).map(rel), rowsR = $$('.alt-row', rows).map(rel), G = 30;
-        const pts = [[h.l - G, h.t + (h.b - h.t) / 2]]; let y0 = h.b + (rowsR[0].t - h.b) / 2;
+        // starts just above the first image, then drops down beside the first heading
+        const pts = [[rowsR[0].l + 4, rowsR[0].t - 34]]; let y0 = rowsR[0].t - 34;
         const anchors = [pts[0]];
         heads.forEach((hh, k) => { const x = hh.l - G, y = hh.t + (hh.b - hh.t) / 2, prev = pts[pts.length - 1];
           if (Math.abs(prev[0] - x) > 1) { pts.push([prev[0], y0], [x, y0]); } pts.push([x, y]); anchors.push([x, y]);
