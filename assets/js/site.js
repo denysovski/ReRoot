@@ -63,18 +63,24 @@
 
   /* ---------- generic 3D scene: tilts toward the pointer, floats when idle ---------- */
   function scene(host, sc, base, signal) {
-    const rx = new Spring(0, { eps: .01 }), ry = new Spring(0, { eps: .01 }); let idle = true; const t0 = performance.now();
-    const paint = (ax = 0, ay = 0) => { sc.style.transform = `${base} rotateX(${rx.value + ax}deg) rotateY(${ry.value + ay}deg)`; };
-    rx.on(() => paint()); ry.on(() => paint()); paint();
-    host.addEventListener('pointermove', e => { if (e.pointerType === 'touch' || motion.reduce) return; idle = false;
+    // pointer tilt springs + an idle float whose strength (mix) eases in 1.5 s after the pointer leaves
+    const rx = new Spring(0, { eps: .01 }), ry = new Spring(0, { eps: .01 }), mix = new Spring(motion.reduce ? 0 : 1, { eps: .001 });
+    const t0 = performance.now(), off = Math.random() * 10; let wait = 0;
+    const paint = now => {
+      const t = ((now || performance.now()) - t0) / 1000 + off, k = mix.value;
+      sc.style.transform = `${base} rotateX(${rx.value + Math.sin(t * .6) * 2 * k}deg) rotateY(${ry.value + Math.cos(t * .5) * 3 * k}deg)`;
+    };
+    rx.on(() => paint()); ry.on(() => paint()); mix.on(() => paint()); paint();
+    host.addEventListener('pointermove', e => { if (e.pointerType === 'touch' || motion.reduce) return;
+      clearTimeout(wait); mix.to(0, { response: .5, damping: 1 });
       const r = host.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5;
       rx.to(-y * 14, { response: .7, damping: 1 }); ry.to(x * 20, { response: .7, damping: 1 }); }, { signal });
-    host.addEventListener('pointerleave', () => { idle = true; rx.to(0, { response: .9, damping: .75 }); ry.to(0, { response: .9, damping: .75 }); }, { signal });
+    host.addEventListener('pointerleave', () => {
+      rx.to(0, { response: 1.1, damping: 1 }); ry.to(0, { response: 1.1, damping: 1 });
+      clearTimeout(wait); wait = setTimeout(() => mix.to(1, { response: 2.4, damping: 1 }), 1500); }, { signal });
+    signal.addEventListener('abort', () => clearTimeout(wait));
     if (!motion.reduce) {
-      const off = Math.random() * 10;
-      const float = now => { if (signal.aborted || !sc.isConnected) return;
-        if (idle && !rx.raf && !ry.raf) { const t = (now - t0) / 1000 + off; paint(Math.sin(t * .6) * 2, Math.cos(t * .5) * 3); }
-        requestAnimationFrame(float); };
+      const float = now => { if (signal.aborted || !sc.isConnected) return; if (mix.value > .001) paint(now); requestAnimationFrame(float); };
       requestAnimationFrame(float);
     }
     requestAnimationFrame(() => host.classList.add('built'));

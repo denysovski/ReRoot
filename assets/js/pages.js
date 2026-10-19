@@ -21,36 +21,49 @@
       const A = window.RR_ARTICLES, a = A.find(x => x.id === params.id) || A[0];
       document.title = a.t + ' · Re:Root';
       $('#article', root).innerHTML = `<a class="btn-text" href="articles">← All articles</a><p class="eyebrow">${esc(a.tag)}</p><h1>${esc(a.t)}</h1><p class="deck">${esc(a.d)}</p><div class="meta"><span>${a.min} min read</span><span>Re:Root guides</span></div><div class="prose">${a.b}</div>
-        <div class="glass cta-band" style="margin-top:30px;justify-items:start;text-align:left;padding:32px"><h2 style="font-size:28px">Track it, don't just read it.</h2><div class="actions-row">${auth.current() ? '<a class="btn btn-primary btn-sm" href="app/today">Check in for today</a>' : '<a class="btn btn-primary btn-sm" href="register">Create free account</a><a class="btn-text" href="login">Log in</a>'}</div></div>`;
+        <div class="glass cta-band"><h2>Track it, don't just read it.</h2><p>Reading helps. Logging today helps more. Check in once a day and watch the pattern change.</p><div class="actions-row">${auth.current() ? '<a class="btn btn-primary" href="app/today">Check in for today</a>' : '<a class="btn btn-primary" href="register">Create free account</a><a class="btn-text" href="login">Log in</a>'}</div></div>`;
       $('#more', root).innerHTML = A.filter(x => x.id !== a.id).slice(0, 3).map(x => `<a class="glass gcard" data-glass href="articles/${x.id}"><span class="tag">${esc(x.tag)} · ${x.min} min</span><h3>${esc(x.t)}</h3><p>${esc(x.d)}</p></a>`).join('');
       glass(root);
     },
     community(root, params, signal) {
-      const me = auth.current();
+      // Each browser session gets its own guest name; messages live 10 minutes, then disappear.
+      const me = auth.current(), TTL = 10 * 60 * 1000;
+      let guest = null; try { guest = sessionStorage.getItem('reroot.guest'); } catch (e) {}
+      if (!guest) { guest = 'Guest ' + String(Math.floor(1000 + Math.random() * 9000)); try { sessionStorage.setItem('reroot.guest', guest); } catch (e) {} }
+      const myName = me ? me.name : guest;
       const ROOMS = { general: ['General', 'Introduce yourself'], nails: ['Nail biting', 'Hands, fidgets, routines'], nofap: ['Porn & masturbation', 'Late nights and triggers'], smoke: ['Smoking & vaping', 'Cravings and swaps'], night: ['Late nights', 'The hardest hour'], wins: ['Wins', 'Share a milestone'] };
       const SEED = {
-        general: [['Mara', 'Day 4 here. Mostly checking in so I have to be honest with myself.', '09:12'], ['Tomek', 'Welcome! The first week is the loudest. It gets quieter.', '09:20']],
-        nails: [['Jo', 'Plaster on my thumb has been the single best trick for me.', '18:02'], ['Lev', 'I keep a smooth stone in my pocket. Hands need a job.', '18:40']],
-        nofap: [['anon_17', 'Phone out of the bedroom changed everything. Boring advice, but it works.', '22:10'], ['K.', 'Slipped yesterday after a bad day. Logged it, back at day 1, still up from last month.', '22:31']],
-        smoke: [['Rita', 'Swapped the after-coffee cigarette for a 5 minute walk. Week 2.', '07:45']],
-        night: [['Sam', 'Anyone else find 23:00 to 01:00 the worst? I set my reminder for 22:30 now.', '23:02'], ['Ola', 'Same. Shower and a paper book is my reset.', '23:15']],
-        wins: [['Daan', '30 days of no nail biting. First time I needed nail clippers in years.', '12:00'], ['Mara', 'One full week!', '20:14']] };
+        general: [['Mara', 'Day 4 here. Mostly checking in so I have to be honest with myself.'], ['Tomek', 'Welcome! The first week is the loudest. It gets quieter.']],
+        nails: [['Jo', 'Plaster on my thumb has been the single best trick for me.'], ['Lev', 'I keep a smooth stone in my pocket. Hands need a job.']],
+        nofap: [['anon_17', 'Phone out of the bedroom changed everything. Boring advice, but it works.'], ['K.', 'Slipped yesterday after a bad day. Logged it, back at day 1, still up from last month.']],
+        smoke: [['Rita', 'Swapped the after-coffee cigarette for a 5 minute walk. Week 2.']],
+        night: [['Sam', 'Anyone else find 23:00 to 01:00 the worst? I set my reminder for 22:30 now.'], ['Ola', 'Same. Shower and a paper book is my reset.']],
+        wins: [['Daan', '30 days of no nail biting. First time I needed nail clippers in years.'], ['Mara', 'One full week!']] };
       let room = 'general';
-      const mine = () => ls.get('reroot.chat', {});
-      const ini = n => n.replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase() || '?';
-      const render = () => {
+      const load = () => { const all = ls.get('reroot.chat2', {}), now = Date.now(); let changed = false;
+        for (const r in all) { const keep = all[r].filter(m => now - m.at < TTL); if (keep.length !== all[r].length) { all[r] = keep; changed = true; } }
+        if (changed) ls.set('reroot.chat2', all); return all; };
+      const ini = n => n.replace(/[^A-Za-z0-9]/g, '').slice(0, 2).toUpperCase() || '?';
+      const left = at => { const ms = Math.max(0, TTL - (Date.now() - at)), m = Math.floor(ms / 60000), s2 = Math.floor(ms / 1000) % 60; return `${m}:${String(s2).padStart(2, '0')}`; };
+      let lastCount = -1;
+      const render = (scroll = true) => {
         $('#rooms', root).innerHTML = Object.entries(ROOMS).map(([id, [n, s]]) => `<button class="room" data-press data-room="${id}" aria-pressed="${id === room}"><b>${n}</b><span>${s}</span></button>`).join('');
-        $('#room-name', root).textContent = ROOMS[room][0];
-        const list = [...SEED[room].map(m => ({ who: m[0], text: m[1], at: m[2] })), ...(mine()[room] || [])];
+        $('#room-name', root).innerHTML = `${ROOMS[room][0]} <span class="me-tag">· you're chatting as ${esc(myName)}</span>`;
+        const mine = load()[room] || [];
         const box = $('#msgs', root);
-        box.innerHTML = list.map(m => `<div class="msg ${m.me ? 'me' : ''}"><span class="av">${esc(ini(m.who))}</span><div><div class="who">${esc(m.who)}<span>${esc(m.at)}</span></div><p>${esc(m.text)}</p></div></div>`).join('');
-        box.scrollTop = 1e6;
+        box.innerHTML = SEED[room].map(m => `<div class="msg"><span class="av">${esc(ini(m[0]))}</span><div><div class="who">${esc(m[0])}<span>pinned example</span></div><p>${esc(m[1])}</p></div></div>`).join('')
+          + mine.map(m => `<div class="msg ${m.who === myName ? 'me' : ''}"><span class="av">${esc(ini(m.who))}</span><div><div class="who">${esc(m.who)}<span>${new Date(m.at).toTimeString().slice(0, 5)}</span><span class="ttl" data-at="${m.at}">disappears in ${left(m.at)}</span></div><p>${esc(m.text)}</p></div></div>`).join('');
+        if (scroll || mine.length !== lastCount) box.scrollTop = 1e6; lastCount = mine.length;
       };
-      root.addEventListener('click', e => { const r = e.target.closest('[data-room]'); if (r) { room = r.dataset.room; render(); } }, { signal });
+      root.addEventListener('click', e => { const r = e.target.closest('[data-room]'); if (r) { room = r.dataset.room; lastCount = -1; render(); } }, { signal });
       $('#compose', root).addEventListener('submit', e => { e.preventDefault(); const v = $('#msg-in').value.trim(); if (!v) return;
-        const all = mine(); (all[room] = all[room] || []).push({ who: me ? me.name : 'Guest', text: v, at: new Date().toTimeString().slice(0, 5), me: true }); ls.set('reroot.chat', all);
+        const all = load(); (all[room] = all[room] || []).push({ who: myName, text: v, at: Date.now() }); ls.set('reroot.chat2', all);
         $('#msg-in').value = ''; render(); });
-      render();
+      const tick = setInterval(() => { const before = (ls.get('reroot.chat2', {})[room] || []).length, now = load()[room] || [];
+        if (now.length !== before) render(false); else $$('.ttl', root).forEach(t => t.textContent = 'disappears in ' + left(+t.dataset.at)); }, 1000);
+      signal.addEventListener('abort', () => clearInterval(tick));
+      addEventListener('storage', e => { if (e.key === 'reroot.chat2') render(false); }, { signal });
+      const h = location.hash.slice(1); if (ROOMS[h]) room = h; render();
     },
     contact(root) {
       $('#cform', root).addEventListener('submit', e => { e.preventDefault();

@@ -174,5 +174,15 @@
   const fromKey = k => { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d); };
   const fmt = (d, o) => d.toLocaleDateString('en-US', o);
 
+  /* ---------- hexagon lines light up around the pointer ---------- */
+  if (matchMedia('(hover: hover) and (pointer: fine)').matches) {
+    const hg = document.createElement('div'); hg.className = 'hexglow'; hg.setAttribute('aria-hidden', 'true');
+    const amb = document.querySelector('.ambient'); amb ? amb.after(hg) : document.body.prepend(hg);
+    let x = 0, y = 0, raf = 0;
+    addEventListener('pointermove', e => { x = e.clientX; y = e.clientY; hg.classList.add('on');
+      if (!raf) raf = requestAnimationFrame(() => { raf = 0; hg.style.setProperty('--hx', x + 'px'); hg.style.setProperty('--hy', y + 'px'); }); }, { passive: true });
+    document.documentElement.addEventListener('pointerleave', () => hg.classList.remove('on'));
+  }
+
   window.RR = { $, $$, clamp, esc, ls, motion, Spring, tracker, project, rubber, theme, auth, menu, closeAll, toast, glass, key, addDays, fromKey, fmt, tzGuess };
 })();
