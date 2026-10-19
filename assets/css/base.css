@@ -239,3 +239,8 @@ select.input{appearance:none;background-image:linear-gradient(45deg,transparent 
 .glass{background:var(--surface);backdrop-filter:none;-webkit-backdrop-filter:none}
 .cal-plate.glass::before{background:var(--surface);backdrop-filter:none;-webkit-backdrop-filter:none}
 .cal-plate.back{background:var(--raised);opacity:1}
+
+/* ---------- soft drop shadow under every card ---------- */
+:root{--drop:0 14px 32px -16px rgba(0,0,0,.22),0 3px 8px -3px rgba(0,0,0,.08)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--drop:0 16px 36px -14px rgba(0,0,0,.7),0 4px 10px -4px rgba(0,0,0,.45)}}
+:root[data-theme="dark"]{--drop:0 16px 36px -14px rgba(0,0,0,.7),0 4px 10px -4px rgba(0,0,0,.45)}
