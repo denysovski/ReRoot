@@ -491,3 +491,78 @@
 .stack3d{width:min(540px,84vw)}
 .step-vis{place-content:normal;align-content:center;grid-template-columns:minmax(0,1fr)}
 .step-vis .m-dots{max-width:300px}
+
+/* ---------- phone mockups scale with the phone (container units) ---------- */
+.phone{container-type:inline-size;border-radius:min(42px,16cqi);padding:3.6%}
+.phone .scr{border-radius:13cqw;padding:18cqw 6.5cqw 6.5cqw;gap:4cqw}
+.phone .scr::before{top:5cqw;width:34cqw;height:9.5cqw;border-radius:8cqw}
+.m-h{font-size:8.4cqw}
+.m-s{font-size:4.6cqw}
+.m-card{border-radius:6.5cqw;padding:5cqw;gap:3.4cqw}
+.m-row{font-size:5cqw;gap:3cqw}
+.m-ring{width:14cqw;height:14cqw;flex:none}
+.m-ring::after{width:70%;height:70%}
+.m-btns{gap:2.5cqw}
+.m-btns span{height:11cqw;border-radius:3.8cqw;font-size:4.2cqw}
+.m-dots{gap:1.8cqw}
+.m-dots i{border-radius:2cqw}
+.m-bars{height:25cqw;gap:1.8cqw}
+.m-bars i{border-radius:1.2cqw}
+.m-tab{left:6cqw;right:6cqw;bottom:5cqw;height:15cqw}
+.m-tab i{width:7.5cqw;height:1.7cqw}
+.m-tab i.on{width:12.5cqw}
+.m-big{font-size:18cqw}
+.m-white{height:12.5cqw;font-size:4.6cqw}
+.m-link{font-size:4.2cqw}
+.center-scr{gap:5cqw}
+.phone .scr:has(.center-scr){padding-bottom:22cqw}
+/* home 3D phones keep their old pixel size, contents now scale too */
+
+/* ---------- evening card buttons ---------- */
+.rv-choice{gap:10px}
+.rv-choice .rv-pill,.rv-choice .rv-fail{justify-self:stretch;text-align:center;padding:13px 16px;border-radius:999px;font-size:15px;font-weight:600}
+.rv-fail{box-shadow:inset 0 0 0 1.5px var(--faint);color:var(--fg)}
+
+/* ---------- tooltip bubble (follows the cursor) ---------- */
+.tip{position:fixed;z-index:95;left:0;top:0;max-width:280px;padding:12px 14px;border-radius:14px;background:var(--white);color:var(--black);font-size:13.5px;line-height:1.45;font-weight:500;
+  box-shadow:0 18px 40px -14px rgba(0,0,0,.6);pointer-events:none;opacity:0;transition:opacity .25s var(--ease)}
+.tip.on{opacity:1}
+.info-i{width:28px;height:28px;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--faint);font-family:Georgia,serif;font-style:italic;font-weight:700;font-size:15px;color:var(--muted);display:grid;place-items:center;transition:color .2s,box-shadow .2s}
+.info-i:hover,.info-i:focus-visible{color:var(--fg);box-shadow:inset 0 0 0 1.5px var(--fg)}
+.logo-tile{cursor:default}
+
+/* ---------- community polish ---------- */
+.compose .input{border-radius:999px;padding:0 22px}
+.msgs.swap{animation:roomIn .5s var(--ease)}
+@keyframes roomIn{from{opacity:0;transform:translateY(14px);filter:blur(6px)}to{opacity:1;transform:none;filter:none}}
+.room{transition:background-color .3s var(--ease),color .3s var(--ease)}
+
+/* ---------- articles: cards ease in when the filter changes ---------- */
+.card-in{animation:cardIn .6s var(--ease) backwards;animation-delay:calc(var(--k,0) * 55ms)}
+@keyframes cardIn{from{opacity:0;transform:translateY(22px) scale(.97);filter:blur(6px)}to{opacity:1;transform:none;filter:none}}
+
+/* ---------- about: perspective portraits, centred manifesto ---------- */
+.m-frame{max-width:460px;width:100%;justify-self:center;transform:perspective(1300px) rotateY(18deg);transform-style:preserve-3d}
+.member.rev .m-frame{order:2;transform:perspective(1300px) rotateY(-18deg)}
+@media (max-width:820px){.member.rev .m-frame{order:0}.m-frame,.member.rev .m-frame{transform:perspective(1300px) rotateY(0)}}
+.m-frame .m-card{max-width:none;box-shadow:var(--glass-shadow),0 50px 80px -40px rgba(0,0,0,.8)}
+.manifesto{justify-items:center;text-align:center}
+.manifesto blockquote{margin-inline:auto}
+
+/* ---------- FAQ: wide, large, smooth ---------- */
+.faq{gap:14px}
+.faq details{padding:0 clamp(22px,3vw,40px);border-radius:24px}
+.faq summary{font-size:clamp(20px,2.1vw,28px);padding:clamp(22px,2.6vw,32px) 0;letter-spacing:-.02em}
+.faq .ans{font-size:clamp(17px,1.5vw,20px);line-height:1.65;max-width:72ch;padding-bottom:clamp(22px,2.6vw,32px)}
+.faq .ans-wrap{overflow:hidden}
+.m-frame .m-card{padding:0!important;aspect-ratio:4/5}
+.m-frame .m-card .avatar{width:100%;height:100%;aspect-ratio:auto}
+/* feature card button: white pill, bottom right */
+.fcard .go{align-self:end;justify-self:end;margin-top:auto;opacity:1;display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 18px;border-radius:999px;background:var(--white);color:var(--black);font-size:14px;font-weight:600;box-shadow:var(--btn-ring);transition:background-color .35s var(--ease),box-shadow .45s var(--ease)}
+.fcard .go::after{content:"→";transition:transform .4s var(--ease)}
+.fcard:hover .go{transform:none;background:#e4e4e6;box-shadow:var(--btn-ring),0 0 22px 2px rgba(255,255,255,.25)}
+.fcard:hover .go::after{transform:translateX(3px)}
+.fcard{grid-template-rows:auto auto auto 1fr auto}
+.hero h1{max-width:13.5ch}
+.hero h1{max-width:none;font-size:clamp(42px,5.4vw,80px);line-height:1}
+@media (max-width:620px){.hero h1 br{display:none}}

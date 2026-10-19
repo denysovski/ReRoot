@@ -184,5 +184,16 @@
     document.documentElement.addEventListener('pointerleave', () => hg.classList.remove('on'));
   }
 
+  /* ---------- tooltip bubble: shows above-right of the cursor for any [data-tip] ---------- */
+  const tip = document.createElement('div'); tip.className = 'tip'; tip.setAttribute('role', 'tooltip'); document.body.appendChild(tip);
+  let tipEl = null;
+  const placeTip = (x, y) => { const w = tip.offsetWidth, h = tip.offsetHeight; let l = x + 16, t = y - h - 14;
+    if (l + w > innerWidth - 12) l = x - w - 16; if (t < 12) t = y + 18; tip.style.transform = `translate(${Math.round(l)}px, ${Math.round(t)}px)`; };
+  document.addEventListener('pointerover', e => { const el = e.target.closest('[data-tip]'); if (!el || el === tipEl) return; tipEl = el; tip.textContent = el.dataset.tip; placeTip(e.clientX, e.clientY); tip.classList.add('on'); });
+  document.addEventListener('pointermove', e => { if (tipEl) placeTip(e.clientX, e.clientY); }, { passive: true });
+  document.addEventListener('pointerout', e => { if (tipEl && !tipEl.contains(e.relatedTarget)) { tipEl = null; tip.classList.remove('on'); } });
+  document.addEventListener('focusin', e => { const el = e.target.closest('[data-tip]'); if (!el) return; tipEl = el; tip.textContent = el.dataset.tip; const r = el.getBoundingClientRect(); placeTip(r.right - 10, r.top + 6); tip.classList.add('on'); });
+  document.addEventListener('focusout', () => { tipEl = null; tip.classList.remove('on'); });
+
   window.RR = { $, $$, clamp, esc, ls, motion, Spring, tracker, project, rubber, theme, auth, menu, closeAll, toast, glass, key, addDays, fromKey, fmt, tzGuess };
 })();

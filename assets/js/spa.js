@@ -33,7 +33,7 @@
     if (m.opt.guest && user) return navigate(user.prefs.onboarded ? 'app/today' : 'onboarding', { replace: true });
     if (m.view === 'app' && !user.prefs.onboarded) return navigate('onboarding', { replace: true });
     const V = window.RR_VIEWS[m.view];
-    document.title = V.title ? `${V.title} · Re:Root` : 'Re:Root · Pull the habit out by the root';
+    document.title = V.title ? `${V.title} · Re:Root` : 'Re:Root · Take back control of your habits';
 
     if (m.layout === 'app' && cur.layout === 'app' && cur.app) { cur.app.go(m.params.tab || 'home', { fromRouter: true }); return; }
     if (cur.ctrl) cur.ctrl.abort();

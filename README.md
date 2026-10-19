@@ -1,6 +1,6 @@
 # Re:Root
 
-**Pull the habit out by the root.**
+**Take back control of your habits.**
 
 Re:Root is a calm, black-and-white web app for quitting the habits you keep going back to: nail biting, masturbation and porn, smoking, late-night scrolling, or anything else. You check in once a day, watch your clean days stack up, and open a short guide when an urge hits.
 

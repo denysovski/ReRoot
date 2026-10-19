@@ -7,14 +7,31 @@
   const showErr = (sel, msg) => { const el = $(sel); el.hidden = false; el.textContent = msg; };
 
   RR.pages = {
+    faq(root, params, signal) {
+      $$('.faq details', root).forEach(d => {
+        const sum = $('summary', d), ans = $('.ans', d), wrap = document.createElement('div'); wrap.className = 'ans-wrap'; ans.before(wrap); wrap.appendChild(ans);
+        let anim = null;
+        sum.addEventListener('click', e => {
+          e.preventDefault(); if (anim) anim.cancel();
+          const reduce = RR.motion.reduce, opening = !d.open || d.dataset.closing === '1';
+          if (opening) { d.dataset.closing = ''; d.open = true; const h = wrap.scrollHeight;
+            if (reduce) return; anim = wrap.animate([{ height: '0px', opacity: 0 }, { height: h + 'px', opacity: 1 }], { duration: 520, easing: 'cubic-bezier(.2,.8,.2,1)' });
+            anim.onfinish = () => { anim = null; }; }
+          else { const h = wrap.offsetHeight; d.dataset.closing = '1';
+            if (reduce) { d.open = false; d.dataset.closing = ''; return; }
+            anim = wrap.animate([{ height: h + 'px', opacity: 1 }, { height: '0px', opacity: 0 }], { duration: 420, easing: 'cubic-bezier(.4,0,.2,1)' });
+            anim.onfinish = () => { d.open = false; d.dataset.closing = ''; anim = null; }; }
+        }, { signal });
+      });
+    },
     articles(root, params, signal) {
       const A = window.RR_ARTICLES; let tag = 'All'; const tags = ['All', ...new Set(A.map(a => a.tag))];
       const render = () => {
         $('#filters', root).innerHTML = tags.map(t => `<button class="chip" data-press data-tag="${t}" aria-pressed="${t === tag}">${t}</button>`).join('');
-        $('#art-grid', root).innerHTML = A.filter(a => tag === 'All' || a.tag === tag).map(a => `<a class="glass gcard" data-glass href="articles/${a.id}"><span class="tag">${esc(a.tag)} · ${a.min} min read</span><h3>${esc(a.t)}</h3><p>${esc(a.d)}</p><span class="read">Read the guide →</span></a>`).join('');
+        $('#art-grid', root).innerHTML = A.filter(a => tag === 'All' || a.tag === tag).map((a, i) => `<a class="glass gcard card-in" style="--k:${i}" data-glass href="articles/${a.id}"><span class="tag">${esc(a.tag)} · ${a.min} min read</span><h3>${esc(a.t)}</h3><p>${esc(a.d)}</p><span class="read">Read the guide →</span></a>`).join('');
         glass(root);
       };
-      root.addEventListener('click', e => { const b = e.target.closest('[data-tag]'); if (b) { tag = b.dataset.tag; render(); } }, { signal });
+      root.addEventListener('click', e => { const b = e.target.closest('[data-tag]'); if (b && b.dataset.tag !== tag) { tag = b.dataset.tag; render(); } }, { signal });
       render();
     },
     article(root, params) {
@@ -48,14 +65,14 @@
       let lastCount = -1;
       const render = (scroll = true) => {
         $('#rooms', root).innerHTML = Object.entries(ROOMS).map(([id, [n, s]]) => `<button class="room" data-press data-room="${id}" aria-pressed="${id === room}"><b>${n}</b><span>${s}</span></button>`).join('');
-        $('#room-name', root).innerHTML = `${ROOMS[room][0]} <span class="me-tag">· you're chatting as ${esc(myName)}</span>`;
+        $('#room-name', root).textContent = ROOMS[room][0];
         const mine = load()[room] || [];
         const box = $('#msgs', root);
         box.innerHTML = SEED[room].map(m => `<div class="msg"><span class="av">${esc(ini(m[0]))}</span><div><div class="who">${esc(m[0])}<span>pinned example</span></div><p>${esc(m[1])}</p></div></div>`).join('')
           + mine.map(m => `<div class="msg ${m.who === myName ? 'me' : ''}"><span class="av">${esc(ini(m.who))}</span><div><div class="who">${esc(m.who)}<span>${new Date(m.at).toTimeString().slice(0, 5)}</span><span class="ttl" data-at="${m.at}">disappears in ${left(m.at)}</span></div><p>${esc(m.text)}</p></div></div>`).join('');
         if (scroll || mine.length !== lastCount) box.scrollTop = 1e6; lastCount = mine.length;
       };
-      root.addEventListener('click', e => { const r = e.target.closest('[data-room]'); if (r) { room = r.dataset.room; lastCount = -1; render(); } }, { signal });
+      root.addEventListener('click', e => { const r = e.target.closest('[data-room]'); if (r && r.dataset.room !== room) { room = r.dataset.room; lastCount = -1; render(); const box = $('#msgs', root), hd = $('#room-name', root); [box, hd].forEach(x => { x.classList.remove('swap'); void x.offsetWidth; x.classList.add('swap'); }); } }, { signal });
       $('#compose', root).addEventListener('submit', e => { e.preventDefault(); const v = $('#msg-in').value.trim(); if (!v) return;
         const all = load(); (all[room] = all[room] || []).push({ who: myName, text: v, at: Date.now() }); ls.set('reroot.chat2', all);
         $('#msg-in').value = ''; render(); });
