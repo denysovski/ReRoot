@@ -1048,3 +1048,24 @@
 :root:not([data-theme="dark"]) .fs-ic,
 :root:not([data-theme="dark"]) .m-white{background:var(--fg);color:var(--bg);box-shadow:none}
 }
+
+/* ---------- selected = inverted (black in light mode, white in dark) ---------- */
+.chip[aria-pressed="true"],.ob-goal[aria-pressed="true"],.room[aria-pressed="true"],.choice button[aria-pressed="true"]{background:var(--fg)!important;color:var(--bg)!important;box-shadow:none}
+.ob-goal[aria-pressed="true"] span{color:color-mix(in srgb,var(--bg) 70%,var(--fg))!important}
+.ob-theme[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+.ob-goal,.ob-choices .chip{transition:background-color .25s var(--ease),color .25s var(--ease)}
+
+/* ---------- onboarding: custom time dropdown ---------- */
+.tsel{position:relative}
+.tsel-btn{height:46px;min-width:130px;padding:0 14px 0 18px;border-radius:14px;display:inline-flex;align-items:center;justify-content:space-between;gap:12px;background:var(--raised);box-shadow:0 0 0 1px var(--line);color:var(--fg);font-size:16px}
+.tsel-btn b{font-weight:500}
+.tsel-btn svg{width:16px;height:16px;transition:transform .3s var(--ease)}
+.tsel.open .tsel-btn{box-shadow:0 0 0 2px var(--fg)}
+.tsel.open .tsel-btn svg{transform:rotate(180deg)}
+.tsel-list{position:absolute;left:0;right:0;top:calc(100% + 8px);z-index:20;margin:0;padding:6px;list-style:none;max-height:240px;overflow:auto;border-radius:16px;background:var(--surface);box-shadow:0 0 0 1px var(--line),var(--drop);
+  opacity:0;transform:translateY(-6px) scale(.98);transform-origin:50% 0;pointer-events:none;transition:opacity .2s var(--ease),transform .25s var(--ease);scrollbar-width:thin}
+.tsel.open .tsel-list{opacity:1;transform:none;pointer-events:auto}
+.tsel-list li{padding:9px 12px;border-radius:10px;cursor:pointer;font-family:var(--f-mono);font-size:15px;text-align:center}
+.tsel-list li:hover{background:var(--raised)}
+.tsel-list li[aria-selected="true"]{background:var(--fg);color:var(--bg)}
+.ob-stage{overflow-x:clip;overflow-y:visible}

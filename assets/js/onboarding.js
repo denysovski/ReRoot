@@ -8,8 +8,9 @@ RR.mountOnboarding = function (layoutRoot, signal) {
     bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 1 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9M10 20a2 2 0 0 0 4 0"/></svg>',
     check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
   };
-  const PRESETS = ['Nail biting', 'Masturbation', 'Porn', 'Smoking', 'Vaping', 'Alcohol', 'Sugar', 'Doomscrolling', 'Phone in bed', 'Gaming', 'Skin picking', 'Caffeine'];
+  const PRESETS = ['Nail biting', 'Masturbation', 'Porn', 'Smoking', 'Vaping', 'Alcohol', 'Sugar', 'Doomscrolling', 'Phone in bed', 'Gaming', 'Skin picking', 'Caffeine', 'Other'];
   const st = { step: 0, habits: [], goal: 30, notif: false, reminder: user.prefs.reminder || '20:00', theme: theme.get(), permMsg: '' };
+  const TIMES = []; for (let h = 6; h < 24; h++) for (const m of ['00', '30']) TIMES.push(String(h).padStart(2, '0') + ':' + m);
   const STEPS = ['welcome', 'habits', 'goal', 'notif', 'theme', 'done'];
   const stage = $('#stage'), back = $('#ob-back');
   $('#dots').innerHTML = STEPS.map(() => '<i></i>').join('');
@@ -26,9 +27,10 @@ RR.mountOnboarding = function (layoutRoot, signal) {
       <div class="ob-goals">${[[7, 'one week'], [14, 'two weeks'], [30, 'a month'], [60, 'two months'], [90, 'three months']].map(([g, l]) => `<button class="glass ob-goal" data-press data-goal="${g}" aria-pressed="${st.goal === g}"><b>${g}</b><span>${l}</span></button>`).join('')}</div>
       <div class="actions"><button class="btn btn-primary" data-press data-go="next">Set a ${st.goal}-day goal</button><button class="btn-text" data-go="skip">Skip this step</button></div>`,
     notif: () => `<div class="ob-art glass">${ICON.bell}</div><h1>Do you want to get notifications?</h1><p class="sub">A gentle daily reminder to check in, at a time you choose.</p>
-      <label class="ob-time">Remind me at <input class="input" type="time" id="rem" value="${st.reminder}"></label>
+      <div class="ob-time"><span id="rem-l">Remind me at</span><div class="tsel" id="tsel"><button type="button" class="tsel-btn" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="rem-l"><b class="mono">${esc(st.reminder)}</b><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+        <ul class="tsel-list" role="listbox" tabindex="-1">${TIMES.map(t => `<li role="option" data-time="${t}" aria-selected="${t === st.reminder}">${t}</li>`).join('')}</ul></div></div>
       <p class="perm" id="perm">${esc(st.permMsg)}</p>
-      <div class="actions">${st.notif ? `<button class="btn btn-primary" data-press data-go="next">Continue</button>` : `<button class="btn btn-primary" data-press data-act="notif-yes">Yes, I want notifications</button>`}<button class="btn-text" data-go="skip">${st.notif ? 'Turn them off again' : 'Skip this step'}</button></div>`,
+      <div class="actions">${st.notif || st.asked ? `<button class="btn btn-primary" data-press data-go="next">Continue</button>` : `<button class="btn btn-primary" data-press data-act="notif-yes">Yes, I want notifications</button>`}<button class="btn-text" data-go="skip">${st.notif ? 'Turn them off again' : 'Skip this step'}</button></div>`,
     theme: () => `<h1>Light, dark or automatic?</h1><p class="sub">Re:Root is black and white either way. Pick what's easiest on your eyes.</p>
       <div class="ob-themes">${[['light', 'Light', 'l'], ['dark', 'Dark', 'd'], ['system', 'Automatic', 's']].map(([v, l, c]) => `<button class="glass ob-theme" data-press data-theme="${v}" aria-pressed="${st.theme === v}"><span class="pv ${c}"><i></i><i></i><i></i></span>${l}</button>`).join('')}</div>
       <div class="actions"><button class="btn btn-primary" data-press data-go="next">Continue</button><button class="btn-text" data-go="skip">Skip this step</button></div>`,
@@ -81,10 +83,20 @@ RR.mountOnboarding = function (layoutRoot, signal) {
     if (h) { const n = h.dataset.habit; st.habits = st.habits.includes(n) ? st.habits.filter(x => x !== n) : [...st.habits, n]; h.setAttribute('aria-pressed', st.habits.includes(n)); refreshPrimary(); return; }
     const gl = e.target.closest('[data-goal]');
     if (gl) { st.goal = +gl.dataset.goal; $$('[data-goal]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.goal === st.goal)); $('.btn-primary', stage).textContent = `Set a ${st.goal}-day goal`; return; }
-    const th = e.target.closest('[data-theme]');
-    if (th) { st.theme = th.dataset.theme; theme.set(st.theme); $$('[data-theme]').forEach(b => b.setAttribute('aria-pressed', b.dataset.theme === st.theme)); return; }
-    if (e.target.closest('[data-act="notif-yes"]')) askNotif();
+    const th = e.target.closest('.ob-theme[data-theme]');
+    if (th) { st.theme = th.dataset.theme; theme.set(st.theme); $$('.ob-theme[data-theme]').forEach(b => b.setAttribute('aria-pressed', b.dataset.theme === st.theme)); return; }
+    if (e.target.closest('[data-act="notif-yes"]')) { askNotif(); return; }
+    // custom time dropdown
+    const ts = $('#tsel'); if (!ts) return;
+    const opt = e.target.closest('[data-time]');
+    if (opt) { st.reminder = opt.dataset.time; $('.tsel-btn b', ts).textContent = st.reminder; $$('[data-time]', ts).forEach(o => o.setAttribute('aria-selected', o === opt)); openT(false);
+      if (st.notif) { st.permMsg = `Notifications are on. We'll remind you at ${st.reminder}.`; $('#perm').textContent = st.permMsg; } return; }
+    if (e.target.closest('.tsel-btn')) { openT(!ts.classList.contains('open')); return; }
+    openT(false);
   }, { signal });
+  function openT(on) { const ts = $('#tsel'); if (!ts) return; ts.classList.toggle('open', on); $('.tsel-btn', ts).setAttribute('aria-expanded', on);
+    if (on) { const sel = $('[aria-selected="true"]', ts); sel && sel.scrollIntoView({ block: 'center' }); } }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') openT(false); }, { signal });
   function refreshPrimary() {
     const b = $('[data-go="next"]', stage); const n = st.habits.length;
     b.disabled = !n; b.textContent = n ? `Continue with ${n} habit${n > 1 ? 's' : ''}` : 'Pick at least one';
@@ -94,20 +106,27 @@ RR.mountOnboarding = function (layoutRoot, signal) {
     const v = $('#custom-in').value.trim(); if (!v) return;
     if (!st.habits.includes(v)) st.habits.push(v); render(false);
   }, { signal });
-  document.addEventListener('change', e => { if (e.target.id === 'rem') st.reminder = e.target.value || '20:00'; }, { signal });
 
   async function askNotif() {
-    const perm = $('#perm');
-    if (!('Notification' in window)) { st.permMsg = 'This browser doesn\'t support notifications. You can still continue.'; perm.textContent = st.permMsg; return; }
-    let res = Notification.permission;
-    try { if (res === 'default') res = await Notification.requestPermission(); } catch (err) { res = 'denied'; }
-    if (res === 'granted') {
-      st.notif = true; st.permMsg = `Notifications are on. We'll remind you at ${st.reminder}.`;
-      try { new Notification('Re:Root reminders are on', { body: `We'll nudge you at ${st.reminder} to check in.`, icon: 'assets/img/icon.svg' }); } catch (err) {}
-      render(false); setTimeout(() => { if (STEPS[st.step] === 'notif') go(st.step + 1); }, 1400);
-    } else {
-      st.notif = false; st.permMsg = 'Notifications are blocked. Allow them in your browser\'s site settings, or skip this step.'; perm.textContent = st.permMsg;
+    // whatever the browser answers, the user can always continue
+    let res = 'unsupported';
+    if ('Notification' in window) {
+      res = Notification.permission;
+      if (res === 'default') {
+        try {
+          res = await Promise.race([
+            new Promise(ok => { const r = Notification.requestPermission(ok); if (r && r.then) r.then(ok, () => ok('denied')); }),
+            new Promise(ok => setTimeout(() => ok(Notification.permission), 8000))
+          ]);
+        } catch (err) { res = Notification.permission; }
+      }
     }
+    st.notif = res === 'granted';
+    if (st.notif) {
+      st.permMsg = `Notifications are on. We'll remind you at ${st.reminder}.`;
+      try { new Notification('Re:Root reminders are on', { body: `We'll nudge you at ${st.reminder} to check in.`, icon: 'assets/img/icon.svg' }); } catch (err) {}
+    } else st.permMsg = res === 'unsupported' ? 'This browser doesn\'t support notifications. You can continue without them.' : 'Notifications are blocked in this browser. You can allow them later in site settings, or continue without them.';
+    st.asked = true; render(false);
   }
   render(false);
 };
