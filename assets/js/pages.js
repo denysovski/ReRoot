@@ -11,8 +11,10 @@
       $$('.faq details', root).forEach(d => {
         const sum = $('summary', d), ans = $('.ans', d), wrap = document.createElement('div'); wrap.className = 'ans-wrap'; ans.before(wrap); wrap.appendChild(ans);
         let anim = null;
+        d._toggle = () => sum.click();
         sum.addEventListener('click', e => {
           e.preventDefault(); if (anim) anim.cancel();
+          if (!d.open || d.dataset.closing === '1') $$('.faq details[open]', root).forEach(o => { if (o !== d && o.dataset.closing !== '1') o._toggle(); });
           const reduce = RR.motion.reduce, opening = !d.open || d.dataset.closing === '1';
           if (opening) { d.dataset.closing = ''; d.open = true; const h = wrap.scrollHeight;
             if (reduce) return; anim = wrap.animate([{ height: '0px', opacity: 0 }, { height: h + 'px', opacity: 1 }], { duration: 520, easing: 'cubic-bezier(.2,.8,.2,1)' });
@@ -29,6 +31,7 @@
       const render = () => {
         $('#filters', root).innerHTML = tags.map(t => `<button class="chip" data-press data-tag="${t}" aria-pressed="${t === tag}">${t}</button>`).join('');
         $('#art-grid', root).innerHTML = A.filter(a => tag === 'All' || a.tag === tag).map((a, i) => `<a class="glass gcard card-in" style="--k:${i}" data-glass href="articles/${a.id}"><span class="tag">${esc(a.tag)} · ${a.min} min read</span><h3>${esc(a.t)}</h3><p>${esc(a.d)}</p><span class="read">Read the guide →</span></a>`).join('');
+        if (tag === 'All') $('#art-grid', root).insertAdjacentHTML('beforeend', `<div class="glass gcard write-card card-in" style="--k:${A.length}"><span class="tag">Write for Re:Root</span><h3>Are you a licensed professional?</h3><p>We are looking for certified therapists, psychologists and counsellors to write evidence-based guides that help people through urges, setbacks and recovery.</p><a class="btn btn-primary btn-sm" data-press href="contact?topic=writer">Apply to write</a></div>`);
         glass(root);
       };
       root.addEventListener('click', e => { const b = e.target.closest('[data-tag]'); if (b && b.dataset.tag !== tag) { tag = b.dataset.tag; render(); } }, { signal });
@@ -83,11 +86,17 @@
       const h = location.hash.slice(1); if (ROOMS[h]) room = h; render();
     },
     contact(root) {
+      const topic = new URLSearchParams(location.search).get('topic');
+      if (topic === 'partner') $('#c-subject', root).value = 'Partnership enquiry';
+      if (topic === 'writer') $('#c-subject', root).value = 'Writing guides for Re:Root';
       $('#cform', root).addEventListener('submit', e => { e.preventDefault();
-        const n = $('#c-name').value.trim(), m = $('#c-email').value.trim(), t = $('#c-msg').value.trim();
-        if (!n || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(m) || !t) { showErr('#c-err', 'Fill in your name, a valid email and a message.'); return; }
-        $('#c-err').hidden = true; const all = ls.get('reroot.messages', []); all.push({ n, m, t, at: Date.now() }); ls.set('reroot.messages', all);
-        e.target.reset(); toast('Message saved. This demo doesn\'t send email.'); });
+        const v = id => $(id).value.trim(), n = v('#c-name'), m = v('#c-email'), sub = v('#c-subject'), t = v('#c-msg');
+        if (!n) return showErr('#c-err', 'Enter your name.');
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(m)) return showErr('#c-err', 'Enter a valid email address, like name@example.com.');
+        if (!sub) return showErr('#c-err', 'Add a subject so we know what this is about.');
+        if (!t) return showErr('#c-err', 'Write a message before sending.');
+        $('#c-err').hidden = true; const all = ls.get('reroot.messages', []); all.push({ n, m, sub, src: v('#c-source'), t, at: Date.now() }); ls.set('reroot.messages', all);
+        e.target.reset(); toast('Thanks, your message was saved. This demo does not send email.'); });
     },
     login(root, params, signal) {
       pwToggle(root, signal);

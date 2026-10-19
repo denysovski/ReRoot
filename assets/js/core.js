@@ -187,8 +187,9 @@
   /* ---------- tooltip bubble: shows above-right of the cursor for any [data-tip] ---------- */
   const tip = document.createElement('div'); tip.className = 'tip'; tip.setAttribute('role', 'tooltip'); document.body.appendChild(tip);
   let tipEl = null;
-  const placeTip = (x, y) => { const w = tip.offsetWidth, h = tip.offsetHeight; let l = x + 16, t = y - h - 14;
-    if (l + w > innerWidth - 12) l = x - w - 16; if (t < 12) t = y + 18; tip.style.transform = `translate(${Math.round(l)}px, ${Math.round(t)}px)`; };
+  const placeTip = (x, y) => { const w = tip.offsetWidth, h = tip.offsetHeight; let l = x + 14, t = y - h - 22, side = 'r', vert = 'a';
+    if (l + w > innerWidth - 12) { l = x - w - 14; side = 'l'; } if (t < 12) { t = y + 26; vert = 'b'; }
+    tip.dataset.side = side; tip.dataset.vert = vert; tip.style.transform = `translate(${Math.round(l)}px, ${Math.round(t)}px)`; };
   document.addEventListener('pointerover', e => { const el = e.target.closest('[data-tip]'); if (!el || el === tipEl) return; tipEl = el; tip.textContent = el.dataset.tip; placeTip(e.clientX, e.clientY); tip.classList.add('on'); });
   document.addEventListener('pointermove', e => { if (tipEl) placeTip(e.clientX, e.clientY); }, { passive: true });
   document.addEventListener('pointerout', e => { if (tipEl && !tipEl.contains(e.relatedTarget)) { tipEl = null; tip.classList.remove('on'); } });
