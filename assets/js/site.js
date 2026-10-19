@@ -45,7 +45,21 @@
     const m = menu($('#burger'), $('#mnav'), { origin: '50% 0' });
     $('#mnav').addEventListener('click', e => { if (e.target.closest('a')) m.hide(); });
     $('#to-top').addEventListener('click', () => scrollTo({ top: 0, behavior: motion.reduce ? 'auto' : 'smooth' }));
+    // nav zooms in when scrolling up, out when scrolling down
+    if (navCtrl) navCtrl.abort(); navCtrl = new AbortController();
+    const nav = $('.nav'), sc = new Spring(1, { eps: .0005 });
+    sc.on(v => { nav.style.transform = `translateX(-50%) scale(${v})`; nav.classList.toggle('compact', v < .97); });
+    let lastY = scrollY, acc = 0;
+    addEventListener('scroll', () => {
+      const y = scrollY, d = y - lastY; lastY = y;
+      if (y < 40) { sc.to(1.04, { response: .45, damping: .8 }); acc = 0; return; }
+      acc = (Math.sign(d) === Math.sign(acc) ? acc : 0) + d;
+      if (acc > 24) sc.to(.88, { response: .5, damping: 1 });
+      else if (acc < -24) sc.to(1.04, { response: .45, damping: .8 });
+    }, { passive: true, signal: navCtrl.signal });
+    sc.set(scrollY < 40 ? 1.04 : 1);
   }
+  let navCtrl = null;
   function updateNav(id) { $$('.nav-links a, .mnav a[data-id]').forEach(a => a.dataset.id === id ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current')); }
 
   /* ---------- generic 3D scene: tilts toward the pointer, floats when idle ---------- */
@@ -88,9 +102,38 @@
     const user = auth.current();
     if (user) $$('[data-guest]', root).forEach(el => el.innerHTML = `<a class="btn btn-primary" data-press href="app">Open the app</a><a class="btn-text" href="app/today">Go to today's check-in</a>`);
     glass(root);
-    const io = 'IntersectionObserver' in window ? new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { rootMargin: '0px 0px -8% 0px' }) : null;
-    $$('[data-reveal]', root).forEach(el => { el.style.transitionDelay = (+el.dataset.reveal || 0) + 's'; io ? io.observe(el) : el.classList.add('in'); });
-    signal.addEventListener('abort', () => io && io.disconnect());
+    /* scroll-linked 3D entrances: content slides in from the sides or rises from depth as it enters */
+    const items = $$('[data-reveal]', root).map(el => {
+      let mode = el.dataset.in;
+      if (!mode) {
+        const par = el.parentElement, sibs = [...par.children].filter(c => c.hasAttribute('data-reveal'));
+        if (el.classList.contains('scene-host')) mode = 'depth';
+        else if (par.matches('.split, .show-row')) mode = [...par.children].indexOf(el) === 0 ? (par.matches('.rev') && par.matches('.show-row') ? 'right' : 'left') : 'right';
+        else if (par.matches('.grid-3, .rhythm, .team, .bento, .logos')) { const cols = par.matches('.logos') ? 4 : 3, k = sibs.indexOf(el) % cols; mode = cols === 4 ? ['left', 'depth', 'depth', 'right'][k] : ['left', 'depth', 'right'][k]; }
+        else if (par.matches('.grid-2')) mode = sibs.indexOf(el) % 2 ? 'right' : 'left';
+        else if (par.matches('.faq, .steps')) mode = sibs.indexOf(el) % 2 ? 'right' : 'left';
+        else mode = 'depth';
+      }
+      return { el, mode, p: -1 };
+    });
+    const ease = t => 1 - Math.pow(1 - t, 3);
+    const apply = it => {
+      const r = it.el.getBoundingClientRect(), vh = innerHeight;
+      const raw = motion.reduce ? 1 : clamp((vh - r.top) / (vh * .45));
+      if (Math.abs(raw - it.p) < .002) return; it.p = raw;
+      const q = 1 - ease(raw), s = it.el.style;
+      if (raw >= 1) { s.translate = ''; s.rotate = ''; s.scale = ''; s.opacity = ''; s.filter = ''; return; }
+      const narrow = innerWidth < 700, side = narrow ? 60 : 160;
+      if (it.mode === 'left') { s.translate = `${-side * q}px ${30 * q}px 0`; s.rotate = `y ${18 * q}deg`; }
+      else if (it.mode === 'right') { s.translate = `${side * q}px ${30 * q}px 0`; s.rotate = `y ${-18 * q}deg`; }
+      else { s.translate = `0 ${70 * q}px ${-420 * q}px`; s.rotate = `x ${22 * q}deg`; }
+      s.opacity = (.1 + .9 * ease(raw)).toFixed(3);
+      s.filter = q > .02 ? `blur(${(q * 6).toFixed(1)}px)` : '';
+    };
+    let ticking = false;
+    const onScroll = () => { if (ticking) return; ticking = true; requestAnimationFrame(() => { ticking = false; items.forEach(apply); }); };
+    addEventListener('scroll', onScroll, { passive: true, signal }); addEventListener('resize', onScroll, { signal });
+    items.forEach(apply);
     $$('[data-fill]', root).forEach(el => {
       el.innerHTML = el.textContent.trim().split(/\s+/).map(w => `<span>${w}</span>`).join(' ');
       const words = $$('span', el);

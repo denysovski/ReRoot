@@ -44,7 +44,7 @@
     if (m.layout === 'site') {
       if (cur.layout !== 'site' || cur.user !== (user && user.email)) RR.site.mountShell(L);
       RR.site.updateNav(m.view);
-      const main = $('#view'); main.innerHTML = V.html;
+      const main = $('#view'); main.innerHTML = V.html; main.dataset.view = m.view;
       RR.site.enhance(main, signal);
       RR.pages[m.view] && RR.pages[m.view](main, m.params, signal);
       enter(main);
