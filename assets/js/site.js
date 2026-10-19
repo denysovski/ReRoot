@@ -11,7 +11,7 @@
     const cta = user ? `<a class="btn btn-primary btn-sm" data-press href="app">Open app</a>`
       : `<a class="login-link" href="login">Log in</a><a class="btn btn-primary btn-sm" data-press href="register">Get started</a>`;
     const col = (h, items) => `<div class="f-col"><h4>${h}</h4>${items.map(([href, t]) => `<a href="${href}">${t}</a>`).join('')}</div>`;
-    return `<header class="nav" aria-label="Main">
+    return `<div class="nav-fade" aria-hidden="true"></div><header class="nav" aria-label="Main">
       <a class="logo" href="./">RE<b>:</b>ROOT</a>
       <nav class="nav-links">${LINKS.map(([h, t, id]) => `<a href="${h}" data-id="${id}">${t}</a>`).join('')}</nav>
       <div class="nav-right"><button class="icon-btn" id="theme-btn" data-press aria-label="Switch theme"></button>${cta}
@@ -189,7 +189,7 @@
     // community: avatars slide in and the member count climbs
     $$('[data-crowd]', root).forEach(cw => {
       const n = $('[data-count-to]', cw), to = +n.dataset.countTo; cw.classList.add('go');
-      new Spring(0, { eps: .0002 }).on(p => { n.textContent = Math.round(1000 + (to - 1000) * p).toLocaleString('en-US'); }).to(1, { response: 2.2, damping: 1 });
+      new Spring(0, { eps: .0002 }).on(p => { n.textContent = Math.round(1000 + (to - 1000) * p).toLocaleString('en-US'); }).to(1, { response: .75, damping: 1 });
     });
     const els = $$('[data-ring-anim], [data-strip-anim]', root); if (!els.length) return;
     const run = el => {

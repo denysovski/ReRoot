@@ -35,4 +35,29 @@ window.RR_ARTICLES = [
     <p>Consider talking to a doctor, psychologist or therapist if the habit causes you physical harm (such as damaged skin or infections around the nails), takes up a lot of your time, hurts your relationships or work, or you keep trying to stop and can't.</p>
     <p>Effective options exist, including cognitive behavioral therapy and habit reversal training. Asking for help is a normal part of recovery.</p>
     <p>If you are in crisis or thinking about hurting yourself, contact your local emergency number or a crisis line right away.</p>` },
+  { id: 'ten-minutes', tag: 'Urges', min: 2, t: 'The ten-minute rule', d: 'You don\'t have to say no forever. Just say "not for the next ten minutes".', b: `
+    <p>"Never again" is a heavy promise to make in the middle of an urge. "Not for the next ten minutes" is much lighter, and it is usually enough.</p>
+    <ul><li>Set a timer for ten minutes the moment you notice the urge.</li><li>Do something with your hands or your body until it rings: wash the dishes, walk around the block, make tea.</li><li>When the timer ends, check in with yourself. If the urge is still there, set another ten minutes.</li></ul>
+    <p>Most urges lose much of their strength after two or three rounds. Each time you wait one out, the next one gets a little easier.</p>` },
+  { id: 'cues', tag: 'Triggers', min: 3, t: 'Map your cues', d: 'Every habit starts with a cue. Write down yours for one week and patterns appear.', b: `
+    <p>Habits rarely start out of nowhere. Something sets them off: a time of day, a place, a feeling, a person or the end of another activity.</p>
+    <p>For one week, every time you notice an urge or slip, write down five things:</p>
+    <ul><li><b>Where</b> you were.</li><li><b>What time</b> it was.</li><li><b>How</b> you felt.</li><li><b>Who</b> you were with.</li><li><b>What</b> you were doing just before.</li></ul>
+    <p>Look back at the end of the week. Two or three cues usually show up again and again. Those are the moments to plan for first.</p>` },
+  { id: 'restart', tag: 'Slips', min: 2, t: 'How to restart the same day', d: 'You don\'t have to wait for Monday. The best time to restart is the next hour.', b: `
+    <p>After a slip it is tempting to write off the rest of the day, or the week, and promise to start fresh on Monday. That gap is where one slip becomes many.</p>
+    <ul><li>Log the slip in Re:Root right away, without judging it.</li><li>Do one small thing that belongs to the clean version of you: drink water, go outside, tidy one surface.</li><li>Pick the next check-in point, like tonight before bed, and aim for that.</li></ul>
+    <p>Restarting within the hour keeps the habit of trying alive, which matters more than any single streak.</p>` },
+  { id: 'phone-free', tag: 'Environment', min: 3, t: 'Design a phone-free bedroom', d: 'For late-night habits, the bedroom is where most battles are lost. Change the room, not just your mind.', b: `
+    <p>Late-night scrolling, porn and other screen habits often happen in the same place: in bed, tired, with a phone in your hand.</p>
+    <ul><li>Charge your phone in another room and use a cheap alarm clock instead.</li><li>Keep a book or a notebook by the bed so your hands have something else to reach for.</li><li>Agree with yourself on a "screens off" time and set your Re:Root reminder half an hour before it.</li></ul>
+    <p>The first few nights feel strange. Within a week, most people sleep better and find the urges weaker.</p>` },
+  { id: 'accountability', tag: 'Support', min: 2, t: 'Find an accountability partner', d: 'A short weekly check-in with someone you trust can double your chances of keeping going.', b: `
+    <p>An accountability partner is not a supervisor. It is someone who checks in with you regularly and listens without judging.</p>
+    <ul><li>Choose a friend, sibling or someone from a Re:Root room who is also working on something.</li><li>Agree on a fixed time, for example Sunday evening, and a simple question: "How did the week go?"</li><li>Share your progress screen if that helps, including the slips.</li></ul>
+    <p>Knowing that someone will ask makes it easier to keep going on the days you would otherwise give up.</p>` },
+  { id: 'therapy', tag: 'Help', min: 3, t: 'What to expect from therapy', d: 'Many people put off getting help because they don\'t know what happens next. Here is a simple overview.', b: `
+    <p>If a habit is affecting your health, work or relationships, a therapist or psychologist can help. Knowing what to expect makes the first step easier.</p>
+    <ul><li><b>The first session</b> is mostly a conversation about what is happening, how long it has been going on and what you have already tried.</li><li><b>Common approaches</b> include cognitive behavioural therapy (CBT) and, for habits like nail biting or skin picking, habit reversal training.</li><li><b>Your data helps.</b> Bringing a few weeks of Re:Root check-ins gives your therapist a clear picture from day one.</li></ul>
+    <p>You can usually start through your doctor or by contacting a therapist directly. Asking for help is a normal, practical step, not a last resort.</p>` },
 ];

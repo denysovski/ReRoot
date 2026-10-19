@@ -39,19 +39,36 @@
       });
     },
     articles(root, params, signal) {
-      const A = window.RR_ARTICLES; let tag = 'All';
+      // first 8 guides + the writer card fill the grid; the rest appear with "Read more articles"
+      const A = window.RR_ARTICLES, FIRST = 8; let tag = 'All', q = '', expanded = false;
+      const tags = ['All', ...new Set(A.map(a => a.tag))];
+      const card = (a, k) => `<article class="glass gcard card-in art-card" style="--k:${k}" data-glass data-href="articles/${a.id}"><span class="tag">${esc(a.tag)} · ${a.min} min read · ${reads(a.id).toLocaleString('en-US')} reads</span><h3>${esc(a.t)}</h3><p>${esc(a.d)}</p><div class="art-actions"><a class="btn btn-primary btn-sm read-more" href="articles/${a.id}">Read more</a>${helpBtn(a.id)}</div></article>`;
+      const writer = k => `<div class="glass gcard write-card card-in" style="--k:${k}"><span class="pen" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></span><h3>Are you a licensed professional?</h3><p>We are looking for certified therapists, psychologists and counsellors to write evidence-based guides that help people through urges, setbacks and recovery.</p><a class="btn btn-primary btn-sm" data-press href="contact?topic=writer">Apply to write</a></div>`;
+      const grid = $('#art-grid', root), grid2 = $('#art-grid2', root), more = $('#art-more', root), empty = $('#art-empty', root);
+      const list = () => A.filter(a => (tag === 'All' || a.tag === tag) && (!q || (a.t + ' ' + a.d).toLowerCase().includes(q)));
+      const render = () => {
+        $('#filters', root).innerHTML = tags.map(t => `<button class="chip" data-press data-tag="${t}" aria-pressed="${t === tag}">${t}</button>`).join('');
+        const L = list(), paged = tag === 'All' && !q;
+        const shown = paged ? L.slice(0, FIRST) : L;
+        grid.innerHTML = shown.map(card).join('') + (paged ? writer(FIRST) : '');
+        grid2.innerHTML = paged && expanded ? L.slice(FIRST).map(card).join('') : '';
+        more.hidden = !(paged && !expanded && L.length > FIRST);
+        empty.hidden = L.length > 0; if (!L.length) empty.innerHTML = `No guides match "${esc(q)}". Try a different word or <button class="btn-text" data-clear>clear the search</button>.`;
+        glass(root);
+      };
       root.addEventListener('click', e => {
         const hb = e.target.closest('[data-helped]');
         if (hb) { e.preventDefault(); e.stopPropagation(); toggleHelped(hb); return; }
-        const card = e.target.closest('.art-card'); if (card && !e.target.closest('a,button')) RR.navigate(card.dataset.href);
-      }, { signal }); const tags = ['All', ...new Set(A.map(a => a.tag))];
-      const render = () => {
-        $('#filters', root).innerHTML = tags.map(t => `<button class="chip" data-press data-tag="${t}" aria-pressed="${t === tag}">${t}</button>`).join('');
-        $('#art-grid', root).innerHTML = A.filter(a => tag === 'All' || a.tag === tag).map((a, i) => `<article class="glass gcard card-in art-card" style="--k:${i}" data-glass data-href="articles/${a.id}"><span class="tag">${esc(a.tag)} · ${a.min} min read · ${reads(a.id).toLocaleString('en-US')} reads</span><h3>${esc(a.t)}</h3><p>${esc(a.d)}</p><div class="art-actions"><a class="btn btn-primary btn-sm read-more" href="articles/${a.id}">Read more</a>${helpBtn(a.id)}</div></article>`).join('');
-        if (tag === 'All') $('#art-grid', root).insertAdjacentHTML('beforeend', `<div class="glass gcard write-card card-in" style="--k:${A.length}"><span class="pen" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></span><h3>Are you a licensed professional?</h3><p>We are looking for certified therapists, psychologists and counsellors to write evidence-based guides that help people through urges, setbacks and recovery.</p><a class="btn btn-primary btn-sm" data-press href="contact?topic=writer">Apply to write</a></div>`);
-        glass(root);
-      };
-      root.addEventListener('click', e => { const b = e.target.closest('[data-tag]'); if (b && b.dataset.tag !== tag) { tag = b.dataset.tag; render(); } }, { signal });
+        const t = e.target.closest('[data-tag]'); if (t) { if (t.dataset.tag !== tag) { tag = t.dataset.tag; render(); } return; }
+        if (e.target.closest('[data-clear]')) { q = ''; $('#art-q', root).value = ''; render(); return; }
+        if (e.target.closest('#art-more-btn')) {
+          // extra cards go into their own masonry block below, so the first nine never move
+          expanded = true; grid2.innerHTML = list().slice(FIRST).map(card).join('');
+          [...grid2.children].forEach(el => el.classList.add('card-more')); more.hidden = true; glass(root); return;
+        }
+        const c = e.target.closest('.art-card'); if (c && !e.target.closest('a,button')) RR.navigate(c.dataset.href);
+      }, { signal });
+      $('#art-q', root).addEventListener('input', e => { q = e.target.value.trim().toLowerCase(); render(); }, { signal });
       render();
     },
     article(root, params, signal) {
