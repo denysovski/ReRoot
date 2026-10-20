@@ -73,7 +73,7 @@ window.RR_VIEWS = {
 "onboarding": {
 "title": "Welcome",
 "desc": "",
-"html": "<div class=\"ob\">\n  <div class=\"ob-top\">\n    <span class=\"glass logo-pill logo\">RE<b>:</b>ROOT</span>\n    <div class=\"dots\" id=\"dots\" aria-hidden=\"true\"></div>\n    <button class=\"btn-text\" id=\"ob-back\" style=\"visibility:hidden\">Back</button>\n  </div>\n  <div class=\"ob-stage\" id=\"stage\" aria-live=\"polite\"></div>\n</div>"
+"html": "<div class=\"ob\">\n  <div class=\"ob-top\">\n    <a class=\"glass logo-pill logo\" href=\"./\" aria-label=\"Re:Root home\">RE<b>:</b>ROOT</a>\n    <div class=\"dots\" id=\"dots\" aria-hidden=\"true\"></div>\n    <button class=\"btn-text\" id=\"ob-back\" style=\"visibility:hidden\">Back</button>\n  </div>\n  <div class=\"ob-stage\" id=\"stage\" aria-live=\"polite\"></div>\n</div>"
 },
 "app": {
 "title": "Your recovery",

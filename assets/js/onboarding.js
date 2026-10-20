@@ -3,12 +3,12 @@ RR.mountOnboarding = function (layoutRoot, signal) {
   const { $, $$, esc, Spring, auth, theme, motion, key, glass } = RR;
   const user = auth.current(); if (!user) return;
   const ICON = {
-    leaf: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21v-7M12 14c0-6 4-10 9-10 0 6-4 10-9 10zM12 14C12 9 9 6 4 6c0 5 3 8 8 8"/></svg>',
+    leaf: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 18a5 5 0 0 0-10 0"/><path d="M12 2v7M4.2 10.2l1.4 1.4M1 18h2M21 18h2M18.4 11.6l1.4-1.4M23 22H1M8 6l4-4 4 4"/></svg>',
     target: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/></svg>',
     bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 1 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9M10 20a2 2 0 0 0 4 0"/></svg>',
     check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
   };
-  const PRESETS = ['Nail biting', 'Masturbation', 'Porn', 'Smoking', 'Vaping', 'Alcohol', 'Sugar', 'Doomscrolling', 'Phone in bed', 'Gaming', 'Skin picking', 'Caffeine', 'Other'];
+  const PRESETS = ['Nail biting', 'Masturbation', 'Porn', 'Smoking', 'Vaping', 'Alcohol', 'Sugar', 'Doomscrolling', 'Phone in bed', 'Gaming', 'Skin picking', 'Caffeine'];
   const st = { step: 0, habits: [], goal: 30, notif: false, reminder: user.prefs.reminder || '20:00', theme: theme.get(), permMsg: '' };
   const TIMES = []; for (let h = 6; h < 24; h++) for (const m of ['00', '30']) TIMES.push(String(h).padStart(2, '0') + ':' + m);
   const STEPS = ['welcome', 'habits', 'goal', 'notif', 'theme', 'done'];
@@ -22,10 +22,10 @@ RR.mountOnboarding = function (layoutRoot, signal) {
     habits: () => `<h1>What do you want to quit?</h1><p class="sub">Pick one or more. Each habit gets its own streak and goal.</p>
       <div class="ob-choices">${[...new Set([...PRESETS, ...st.habits])].map(h => `<button class="chip" data-press data-habit="${esc(h)}" aria-pressed="${st.habits.includes(h)}">${esc(h)}</button>`).join('')}</div>
       <form class="ob-custom" id="custom"><input class="input" id="custom-in" maxlength="40" placeholder="Something else…" aria-label="Add your own habit"><button class="btn btn-glass btn-sm" data-press type="submit">Add</button></form>
-      <div class="actions"><button class="btn btn-primary" data-press data-go="next" ${st.habits.length ? '' : 'disabled'}>${st.habits.length ? `Continue with ${st.habits.length} habit${st.habits.length > 1 ? 's' : ''}` : 'Pick at least one'}</button><button class="btn-text" data-go="skip">Skip this step</button></div>`,
+      <div class="actions"><button class="btn btn-primary" data-press data-go="next" ${st.habits.length ? '' : 'disabled'}>Continue</button><button class="btn-text" data-go="skip">Skip this step</button></div>`,
     goal: () => `<div class="ob-art glass">${ICON.target}</div><h1>Set your first goal.</h1><p class="sub">How many clean days in a row are you aiming for? Shorter goals are easier to reach and restart.</p>
       <div class="ob-goals">${[[7, 'one week'], [14, 'two weeks'], [30, 'a month'], [60, 'two months'], [90, 'three months']].map(([g, l]) => `<button class="glass ob-goal" data-press data-goal="${g}" aria-pressed="${st.goal === g}"><b>${g}</b><span>${l}</span></button>`).join('')}</div>
-      <div class="actions"><button class="btn btn-primary" data-press data-go="next">Set a ${st.goal}-day goal</button><button class="btn-text" data-go="skip">Skip this step</button></div>`,
+      <div class="actions"><button class="btn btn-primary" data-press data-go="next"><span class="fade-t">Set a ${st.goal}-day goal</span></button><button class="btn-text" data-go="skip">Skip this step</button></div>`,
     notif: () => `<div class="ob-art glass">${ICON.bell}</div><h1>Do you want to get notifications?</h1><p class="sub">A gentle daily reminder to check in, at a time you choose.</p>
       <div class="ob-time"><span id="rem-l">Remind me at</span><div class="tsel" id="tsel"><button type="button" class="tsel-btn" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="rem-l"><b class="mono">${esc(st.reminder)}</b><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
         <ul class="tsel-list" role="listbox" tabindex="-1">${TIMES.map(t => `<li role="option" data-time="${t}" aria-selected="${t === st.reminder}">${t}</li>`).join('')}</ul></div></div>
@@ -82,7 +82,7 @@ RR.mountOnboarding = function (layoutRoot, signal) {
     const h = e.target.closest('[data-habit]');
     if (h) { const n = h.dataset.habit; st.habits = st.habits.includes(n) ? st.habits.filter(x => x !== n) : [...st.habits, n]; h.setAttribute('aria-pressed', st.habits.includes(n)); refreshPrimary(); return; }
     const gl = e.target.closest('[data-goal]');
-    if (gl) { st.goal = +gl.dataset.goal; $$('[data-goal]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.goal === st.goal)); $('.btn-primary', stage).textContent = `Set a ${st.goal}-day goal`; return; }
+    if (gl) { st.goal = +gl.dataset.goal; $$('[data-goal]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.goal === st.goal)); const ft = $('.btn-primary .fade-t', stage); if (ft) { ft.classList.add('swap'); clearTimeout(ft._t); ft._t = setTimeout(() => { ft.textContent = `Set a ${st.goal}-day goal`; ft.classList.remove('swap'); }, 180); } return; }
     const th = e.target.closest('.ob-theme[data-theme]');
     if (th) { st.theme = th.dataset.theme; theme.set(st.theme); $$('.ob-theme[data-theme]').forEach(b => b.setAttribute('aria-pressed', b.dataset.theme === st.theme)); return; }
     if (e.target.closest('[data-act="notif-yes"]')) { askNotif(); return; }
@@ -99,7 +99,7 @@ RR.mountOnboarding = function (layoutRoot, signal) {
   document.addEventListener('keydown', e => { if (e.key === 'Escape') openT(false); }, { signal });
   function refreshPrimary() {
     const b = $('[data-go="next"]', stage); const n = st.habits.length;
-    b.disabled = !n; b.textContent = n ? `Continue with ${n} habit${n > 1 ? 's' : ''}` : 'Pick at least one';
+    b.disabled = !n;
   }
   document.addEventListener('submit', e => {
     if (e.target.id !== 'custom') return; e.preventDefault();

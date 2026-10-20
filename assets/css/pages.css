@@ -1111,3 +1111,10 @@
 @media (prefers-reduced-motion: reduce){.show-text .st{opacity:1;translate:none;filter:none;transition:none}}
 
 html:not(.ready) .cal3d .d:not(.e),html:not(.ready) .cal3d .cal-chip,html:not(.ready) .cal3d .cal-plate{opacity:0}
+/* ---------- onboarding: clickable logo, centred progress dots, fading goal label ---------- */
+.ob-top{position:relative}
+.ob-top .dots{position:absolute;left:50%;top:calc(20px + 22px);transform:translate(-50%,-50%)}
+a.logo-pill{text-decoration:none;color:var(--fg);transition:transform .3s var(--ease)}
+a.logo-pill:hover{transform:scale(1.04)}
+.fade-t{display:inline-block;transition:opacity .18s var(--ease),filter .18s var(--ease),transform .25s var(--ease)}
+.fade-t.swap{opacity:0;filter:blur(4px);transform:translateY(4px)}

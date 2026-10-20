@@ -187,3 +187,83 @@ body{min-height:100vh}
 @media (max-width:760px){.dash-links{grid-template-columns:1fr}}
 .dash .chart-h h3{font-size:17px}
 @media (prefers-reduced-motion: reduce){.dash-bars rect,.wdb i,.hbar i{transform:none!important}}
+
+/* ---------- today: name opens details, slip note slides open ---------- */
+.hc-name{display:inline-flex;align-items:center;gap:6px;text-align:left;color:var(--fg);cursor:pointer}
+.hc-name svg{width:16px;height:16px;opacity:.45;transition:transform .3s var(--ease),opacity .3s}
+.hc-name:hover svg{opacity:1;transform:translateX(3px)}
+.hc{gap:18px}
+.slipwrap{display:grid;grid-template-rows:0fr;opacity:0;margin-top:-18px;transition:grid-template-rows .45s var(--ease),opacity .35s var(--ease),margin-top .45s var(--ease)}
+.slipwrap > div{overflow:hidden;min-height:0}
+.slipwrap.open{grid-template-rows:1fr;opacity:1;margin-top:0}
+@media (prefers-reduced-motion: reduce){.slipwrap{transition:none}}
+
+/* ---------- year calendar ---------- */
+.year-wrap{overflow-x:auto;padding-bottom:4px}
+svg.year{width:100%;min-width:760px;height:auto;display:block}
+svg.year text{font-size:10px;fill:var(--muted)}
+svg.year rect.fut{fill:none;stroke:var(--faint);stroke-width:1}
+.legend i.fut{background:transparent;box-shadow:inset 0 0 0 1px var(--faint)}
+.stat.has-tip{cursor:help}
+.stat b small{font-size:.5em;color:var(--muted);font-weight:500;letter-spacing:0}
+
+/* ---------- habit detail sheet ---------- */
+.sheet.wide{width:min(1060px,100%);max-height:92vh}
+.det{display:grid;gap:14px}
+.det .stats{margin:0}
+.det .chips{margin:0}
+.slips{width:100%;border-collapse:collapse;font-size:14.5px}
+.slips th{text-align:left;font-weight:500;font-size:12.5px;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--line)}
+.slips td{padding:10px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+.slips tr:last-child td{border-bottom:0}
+
+/* ---------- goals: full width list + settings menu ---------- */
+.glist{display:grid;gap:14px}
+.gc{position:relative;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:18px 32px;padding:clamp(20px,3vw,30px)}
+.gc .gc-top{grid-column:1}
+.gc .miles{grid-column:2;justify-content:flex-end;max-width:560px;padding-right:44px}
+@media (max-width:900px){.gc{grid-template-columns:1fr}.gc .miles{grid-column:1;justify-content:flex-start;padding-right:0}}
+.gc-goal{font-size:15px!important;color:var(--fg)!important;margin-top:4px!important}
+.gc-goal b{font-weight:600}
+.gear-wrap{position:absolute;top:14px;right:14px;z-index:5}
+.gear{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;color:var(--muted);transition:background-color .25s,color .25s,transform .5s var(--ease)}
+.gear svg{width:20px;height:20px}
+.gear:hover,.gear-wrap.open .gear{background:var(--raised);color:var(--fg)}
+.gear-wrap.open .gear{transform:rotate(60deg)}
+.gmenu{position:absolute;right:0;top:calc(100% + 8px);min-width:250px;padding:6px;border-radius:18px;background:var(--surface);box-shadow:0 0 0 1px var(--line),var(--drop);
+  opacity:0;transform:translateY(-6px) scale(.97);transform-origin:100% 0;pointer-events:none;transition:opacity .2s var(--ease),transform .25s var(--ease)}
+.gear-wrap.open .gmenu{opacity:1;transform:none;pointer-events:auto}
+.gmenu .mi{display:flex;align-items:center;gap:12px;width:100%;padding:11px 12px;border-radius:12px;font-size:15px;font-weight:500;text-align:left}
+.gmenu .mi:hover{background:var(--raised)}
+.gmenu .mi svg{width:18px;height:18px;flex:none;opacity:.8}
+.gmenu .mi.danger{color:#e5484d}
+.gmenu hr{border:0;border-top:1px solid var(--line);margin:6px 4px}
+.gconfirm{display:grid;gap:10px;padding:10px 12px;font-size:14px}
+.gconfirm span{color:var(--muted)}
+.gconfirm .btn{background:#e5484d;color:#fff;justify-self:start}
+.addcard{min-height:90px}
+
+/* ---------- habit form ---------- */
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+@media (max-width:560px){.fgrid{grid-template-columns:1fr}}
+.hint{display:block;font-size:12.5px;color:var(--muted);margin-top:8px;line-height:1.5}
+.opt{font-weight:400;color:var(--muted);font-size:12.5px;margin-left:4px}
+.sheet select.input{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;background-size:16px;padding-right:40px;cursor:pointer}
+
+/* ---------- reminder bubble ---------- */
+.rr-bubble{position:fixed;right:20px;bottom:96px;z-index:90;display:flex;align-items:center;gap:12px;max-width:min(440px,calc(100vw - 40px));padding:14px 14px 14px 14px;border-radius:20px;background:var(--surface);box-shadow:0 0 0 1px var(--line),var(--drop),0 24px 60px -20px rgba(0,0,0,.6);
+  opacity:0;transform:translateY(20px) scale(.96);pointer-events:none;transition:opacity .35s var(--ease),transform .5s cubic-bezier(.3,1.4,.5,1)}
+.rr-bubble.show{opacity:1;transform:none;pointer-events:auto}
+.rr-bubble > div{display:grid;gap:2px;min-width:0;flex:1}
+.rr-bubble b{font-size:15px}
+.rr-bubble span:not(.rb-ic){font-size:13px;color:var(--muted)}
+.rb-ic{width:40px;height:40px;border-radius:12px;background:var(--fg);color:var(--bg);display:grid;place-items:center;flex:none}
+.rb-ic svg{width:20px;height:20px}
+.rb-x{width:28px;height:28px;border-radius:50%;color:var(--muted);font-size:18px;line-height:1}
+.rb-x:hover{background:var(--raised);color:var(--fg)}
+
+/* ---------- home hero tweaks ---------- */
+.dash-hero{position:relative}
+.goal-pill{position:absolute;top:clamp(18px,3vw,28px);right:clamp(18px,3vw,28px);height:34px;padding:0 14px;border-radius:999px;display:inline-flex;align-items:center;font-size:13.5px;font-weight:600;background:var(--raised);box-shadow:0 0 0 1px var(--line)}
+.hero-from{margin-top:12px;font-size:clamp(19px,1.8vw,23px);font-weight:500;color:var(--fg);letter-spacing:-.01em}
+.gc:has(.gear-wrap.open){z-index:20}
