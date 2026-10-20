@@ -1069,3 +1069,45 @@
 .tsel-list li:hover{background:var(--raised)}
 .tsel-list li[aria-selected="true"]{background:var(--fg);color:var(--bg)}
 .ob-stage{overflow-x:clip;overflow-y:visible}
+
+/* ---------- hero calendar: fills in on load ---------- */
+.ready .cal3d .d:not(.e){animation:dIn .55s var(--ease) backwards;animation-delay:calc(var(--i,0) * 32ms + .35s)}
+@keyframes dIn{from{opacity:0;scale:.55}}
+.ready .cal3d .d.c,.cal3d .d.t{animation:dIn .55s var(--ease) backwards,dFill .5s var(--ease) backwards;animation-delay:calc(var(--i,0) * 32ms + .35s),calc(var(--i,0) * 32ms + .55s)}
+@keyframes dFill{from{background:var(--faint);color:var(--muted)}}
+.ready .cal3d .cal-chip{animation:chipIn .8s cubic-bezier(.3,1.4,.5,1) backwards}
+.ready .cal3d .cal-chip.c1{animation-delay:1.45s}.ready .cal3d .cal-chip.c2{animation-delay:1.7s}.ready .cal3d .cal-chip.c3{animation-delay:1.95s}
+@keyframes chipIn{from{opacity:0;scale:.6;translate:0 30px}}
+.ready .cal3d .cal-plate{animation:plateIn .9s var(--ease) backwards .1s}
+@keyframes plateIn{from{opacity:0;translate:0 40px}}
+@media (prefers-reduced-motion: reduce){.cal3d .d,.cal3d .cal-chip,.cal3d .cal-plate{animation:none!important}}
+
+/* ---------- habit stack + phones: driven by scroll in JS ---------- */
+.srow{will-change:transform,opacity}
+.phones3d.js-turn .phone{transition:none}
+
+/* ---------- hero: glowing orb peeking from the bottom ---------- */
+.hero{position:relative}
+.hero > :not(.hero-orb){position:relative;z-index:1}
+.hero-orb{position:absolute;left:50%;bottom:-300px;width:min(760px,90vw);height:420px;translate:-50% 0;pointer-events:none;z-index:0;filter:blur(70px);opacity:.55}
+.hero-orb i{position:absolute;border-radius:50%;mix-blend-mode:screen;animation:orbA 9s ease-in-out infinite alternate}
+.hero-orb i:nth-child(1){left:8%;top:10%;width:55%;height:80%;background:#6d5dfc}
+.hero-orb i:nth-child(2){left:38%;top:0;width:52%;height:85%;background:#22c3ee;animation-name:orbB;animation-duration:11s}
+.hero-orb i:nth-child(3){left:24%;top:25%;width:50%;height:75%;background:#f472b6;animation-name:orbC;animation-duration:13s}
+@keyframes orbA{to{translate:12% -8%;scale:1.12}}
+@keyframes orbB{to{translate:-14% 6%;scale:.9}}
+@keyframes orbC{to{translate:6% -12%;scale:1.18}}
+.hero-orb{animation:orbPulse 6s ease-in-out infinite}
+@keyframes orbPulse{50%{opacity:.75}}
+:root[data-theme="light"] .hero-orb{opacity:.38;animation:none}
+:root[data-theme="light"] .hero-orb i{mix-blend-mode:multiply}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]) .hero-orb{opacity:.38;animation:none}:root:not([data-theme="dark"]) .hero-orb i{mix-blend-mode:multiply}}
+@media (max-width:920px){.hero-orb{display:none}}
+@media (prefers-reduced-motion: reduce){.hero-orb,.hero-orb i{animation:none}}
+
+/* ---------- showcase: text arrives step by step ---------- */
+.show-text .st{opacity:0;translate:0 26px;filter:blur(6px);transition:opacity .7s var(--ease),translate .8s var(--ease),filter .7s var(--ease)}
+.show-text .st.in{opacity:1;translate:0 0;filter:none}
+@media (prefers-reduced-motion: reduce){.show-text .st{opacity:1;translate:none;filter:none;transition:none}}
+
+html:not(.ready) .cal3d .d:not(.e),html:not(.ready) .cal3d .cal-chip,html:not(.ready) .cal3d .cal-plate{opacity:0}

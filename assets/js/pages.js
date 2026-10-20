@@ -45,7 +45,9 @@
       const still = RR.motion.reduce;
       const tick = () => { const vh = innerHeight;
         rows.forEach(r => { const b = r.phone.getBoundingClientRect(); if (b.bottom < -200 || b.top > vh + 200) return;
-          const c = (b.top + b.bottom) / 2, p = still ? 1 : clamp((vh * .95 - c) / (vh * .6)); if (Math.abs(p - r.last) < .002) return; r.last = p; draw[r.kind](r, p); }); };
+          const c = (b.top + b.bottom) / 2, p = still ? 1 : clamp((vh * .95 - c) / (vh * .6)); if (Math.abs(p - r.last) < .002) return; r.last = p; draw[r.kind](r, p);
+          // the text arrives in order: heading, description, then each point
+          r.st = r.st || $$('.st', r.row); r.st.forEach((el, i) => el.classList.toggle('in', still || p >= .12 + i * .13)); }); };
       let raf = 0; const req = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; tick(); }); };
       addEventListener('scroll', req, { passive: true, signal }); addEventListener('resize', req, { signal }); tick();
       // breathing: in 4, hold 4, out 6, with a live countdown

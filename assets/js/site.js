@@ -149,8 +149,30 @@
     });
   }
 
+  /* habit stack flies in and settles; the three phones turn like a carousel as you scroll past */
+  function scrollScenes(root, signal) {
+    const stack = $('.stack3d', root), phones = $('.phones3d', root); if (!stack && !phones) return;
+    const rows = stack ? $$('.srow', stack) : [], chip = stack && $('.stack-chip', stack), ph = phones ? $$('.phone', phones) : [];
+    if (phones) phones.classList.add('js-turn');
+    const prog = el => { const r = el.closest('.scene-host').getBoundingClientRect(), vh = innerHeight; return clamp((vh - r.top) / (vh + r.height)); };
+    const sm = t => t * t * (3 - 2 * t);
+    const frame = () => {
+      if (stack) { const p = motion.reduce ? 1 : clamp(prog(stack) / .5);
+        stack.style.scale = (.82 + .18 * sm(p)).toFixed(4);
+        rows.forEach((el, i) => { const q = 1 - sm(clamp(p * 1.7 - i * .18)); el.style.translate = `${q * 260}px ${q * 90}px ${q * 160}px`; el.style.opacity = (1 - q).toFixed(3); });
+        if (chip) { const q = 1 - sm(clamp(p * 1.7 - .8)); chip.style.opacity = (1 - q).toFixed(3); chip.style.translate = `0 ${-q * 40}px 0`; } }
+      if (phones) { const narrow = innerWidth < 620, R = narrow ? 105 : 205, t = motion.reduce ? 0 : sm(clamp((prog(phones) - .32) / .4));
+        ph.forEach((el, k) => { const th = ((k - 1) * 120 + t * 120) * Math.PI / 180, s = Math.sin(th), c = Math.cos(th);
+          el.style.transform = `translateX(${(s * R).toFixed(1)}px) translateZ(${(48 + (c - 1) * 110).toFixed(1)}px) rotateY(${(-s * 24).toFixed(2)}deg)`;
+          el.style.zIndex = Math.round(c * 10) + 10; }); }
+    };
+    let raf = 0; const req = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; frame(); }); };
+    addEventListener('scroll', req, { passive: true, signal }); addEventListener('resize', req, { signal }); frame();
+  }
+
   function enhance(root, signal) {
     thread(root, signal);
+    scrollScenes(root, signal);
     const user = auth.current();
     if (user) $$('[data-guest]', root).forEach(el => el.innerHTML = `<a class="btn btn-primary" data-press href="app">Open the app</a><a class="btn-text" href="app/today">Go to today's check-in</a>`);
     glass(root);
@@ -166,16 +188,17 @@
         else if (par.matches('.faq, .steps')) mode = sibs.indexOf(el) % 2 ? 'right' : 'left';
         else mode = 'depth';
       }
-      return { el, mode, p: -1 };
+      const steps = el.parentElement.matches('.steps');
+      return { el, mode, p: -1, span: +el.dataset.span || (steps ? .8 : .45), side: steps ? 300 : 0 };
     });
     const ease = t => 1 - Math.pow(1 - t, 3);
     const apply = it => {
       const r = it.el.getBoundingClientRect(), vh = innerHeight;
-      const raw = motion.reduce ? 1 : clamp((vh - r.top) / (vh * .45));
+      const raw = motion.reduce ? 1 : clamp((vh - r.top) / (vh * it.span));
       if (Math.abs(raw - it.p) < .002) return; it.p = raw;
       const q = 1 - ease(raw), s = it.el.style;
       if (raw >= 1) { s.translate = ''; s.rotate = ''; s.scale = ''; s.opacity = ''; s.filter = ''; return; }
-      const narrow = innerWidth < 700, side = narrow ? 60 : 160;
+      const narrow = innerWidth < 700, side = narrow ? 60 : (it.side || 160);
       if (it.mode === 'left') { s.translate = `${-side * q}px ${30 * q}px 0`; s.rotate = `y ${18 * q}deg`; }
       else if (it.mode === 'right') { s.translate = `${side * q}px ${30 * q}px 0`; s.rotate = `y ${-18 * q}deg`; }
       else { s.translate = `0 ${70 * q}px ${-420 * q}px`; s.rotate = `x ${22 * q}deg`; }
