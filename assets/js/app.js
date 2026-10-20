@@ -3,6 +3,13 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
   const { $, $$, esc, clamp, Spring, tracker, project, rubber, theme, auth, menu, toast, motion, key, addDays, fromKey, fmt, tzGuess, closeAll } = RR;
   const glass = () => {}; // no hover tilt or spotlight inside the app
   let user = auth.current(); if (!user) return;
+  // animated plasma behind the dashboard (dark and light variants follow the theme)
+  const pbg = document.createElement('div'); pbg.className = 'plasma-bg'; pbg.setAttribute('aria-hidden', 'true'); layoutRoot.prepend(pbg);
+  const plasma = RR.plasma ? RR.plasma(pbg, { lightMode: !theme.isDark(), opacity: .85, quality: .6 }) : null;
+  const plasmaTheme = () => { if (!plasma) return; plasma.cfg.lightMode = !theme.isDark(); plasma.update(); };
+  document.addEventListener('rr:theme', plasmaTheme, { signal });
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', plasmaTheme, { signal });
+  signal.addEventListener('abort', () => { plasma && plasma.destroy(); pbg.remove(); });
   let S = RRStore.load(user.email);
   const save = () => RRStore.save(user.email, S);
   const tz = () => user.prefs.tz || tzGuess();
@@ -40,11 +47,11 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
   function animateRings(root) {
     $$('[data-ring]', root).forEach(el => {
       const id = el.dataset.ring, to = +el.dataset.to, n = +el.dataset.n, from = prevRing[id] || { f: 0, n: 0 }, arc = $('.arc', el), b = $('b', el);
-      new Spring(0, { eps: .0005 }).on(p => { arc.style.strokeDashoffset = RC * (1 - (from.f + (to - from.f) * p)); b.textContent = Math.round(from.n + (n - from.n) * p); }).to(1, { response: .7, damping: 1 });
+      new Spring(0, { eps: .0005 }).on(q => { const p = clamp(q, 0, 1.05); arc.style.strokeDashoffset = RC * (1 - (from.f + (to - from.f) * p)); b.textContent = Math.round(from.n + (n - from.n) * Math.min(p, 1)); }).to(1, { response: .7, damping: 1 });
       prevRing[id] = { f: to, n };
     });
   }
-  const countUp = (el, to) => new Spring(0, { eps: .001 }).on(p => el.textContent = Math.round(to * p)).to(1, { response: 1, damping: 1 });
+  const countUp = (el, to) => new Spring(0, { eps: .001 }).on(p => el.textContent = Math.round(to * clamp(p, 0, 1))).to(1, { response: 1, damping: 1 });
 
   /* ---------- corner menus ---------- */
   menu($('#brand-btn'), $('#brand-menu'), { origin: 'top left' });

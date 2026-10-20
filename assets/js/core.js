@@ -35,7 +35,7 @@
       if (this.raf) return;
       let last = performance.now();
       const step = now => {
-        const dt = Math.min((now - last) / 1000, 1 / 20); last = now;
+        const dt = Math.max(0, Math.min((now - last) / 1000, 1 / 20)); last = now;
         const n = Math.max(1, Math.ceil(dt * 240)), h = dt / n;
         for (let i = 0; i < n; i++) { const a = -this.k * (this.value - this.target) - this.c * this.velocity; this.velocity += a * h; this.value += this.velocity * h; }
         if (Math.abs(this.velocity) < this.eps * 10 && Math.abs(this.value - this.target) < this.eps) { this.value = this.target; this.velocity = 0; this.raf = 0; this.emit(); this.rest(); return; }
