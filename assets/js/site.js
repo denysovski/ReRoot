@@ -170,8 +170,17 @@
     addEventListener('scroll', req, { passive: true, signal }); addEventListener('resize', req, { signal }); frame();
   }
 
+  /* hero glow: a wide band of light along the bottom of the window at the very top, shrinking into a round orb as you scroll */
+  function heroOrb(root, signal) {
+    const o = $('.hero-orb', root); if (!o) return;
+    const f = () => { const p = motion.reduce ? 1 : clamp(scrollY / 380), e = p * p * (3 - 2 * p);
+      o.style.setProperty('--ow', (1 - e).toFixed(4)); };
+    addEventListener('scroll', f, { passive: true, signal }); f();
+  }
+
   function enhance(root, signal) {
     thread(root, signal);
+    heroOrb(root, signal);
     scrollScenes(root, signal);
     const user = auth.current();
     if (user) $$('[data-guest]', root).forEach(el => el.innerHTML = `<a class="btn btn-primary" data-press href="app">Open the app</a><a class="btn-text" href="app/today">Go to today's check-in</a>`);

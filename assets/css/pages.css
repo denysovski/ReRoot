@@ -1118,3 +1118,6 @@ a.logo-pill{text-decoration:none;color:var(--fg);transition:transform .3s var(--
 a.logo-pill:hover{transform:scale(1.04)}
 .fade-t{display:inline-block;transition:opacity .18s var(--ease),filter .18s var(--ease),transform .25s var(--ease)}
 .fade-t.swap{opacity:0;filter:blur(4px);transform:translateY(4px)}
+/* hero glow morph: --ow = 1 at the very top (wide band along the bottom edge), 0 once scrolled (round orb) */
+.hero-orb{--ow:0;width:calc(min(760px,90vw) + (100vw - 40px - min(760px,90vw)) * var(--ow));height:calc(420px - 160px * var(--ow));bottom:calc(-300px + 80px * var(--ow))}
+.hero-orb i{transition:none}
