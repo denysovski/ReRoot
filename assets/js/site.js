@@ -239,12 +239,11 @@
     const qs = $$('.sw-q', sec), ROLLS = 2;
     const f = () => {
       // starts with the very first bit of scrolling, wherever the section begins
-      const r = sec.getBoundingClientRect(), top = r.top + scrollY, start = Math.max(0, top - 140), span = Math.max(1, r.height - innerHeight * .55), p = motion.reduce ? 0 : clamp((scrollY - start) / span);
+      const r = sec.getBoundingClientRect(), top = r.top + scrollY, start = Math.max(0, top - 140), span = Math.max(1, r.height * .8), p = motion.reduce ? 0 : clamp((scrollY - start) / span);
       lines.forEach((ls, k) => ls.forEach((l, j) => {
         const q = clamp(p * 2.6 - k * .14 - j * .1), e = q * q * (3 - 2 * q), fr = (e * ROLLS) % 1;
         l.a.style.transform = `translateY(${(fr * 100).toFixed(2)}%)`; l.b.style.transform = `translateY(${((fr - 1) * 100).toFixed(2)}%)`;
       }));
-      qs.forEach((q, k) => { const v = clamp((p - .06 - k * .07) / .14); q.style.opacity = v.toFixed(3); q.style.translate = `0 ${(1 - v) * 18}px`; q.style.filter = v < 1 ? `blur(${((1 - v) * 6).toFixed(1)}px)` : ''; });
     };
     addEventListener('scroll', f, { passive: true, signal }); addEventListener('resize', f, { signal }); f();
     // the intro question mark grows and fades as you scroll into the title
