@@ -20,6 +20,13 @@
 
   RR.pages = {
     showcase(root, params, signal) {
+      // "This motivated me" on the stories: toggles, remembers per browser, updates both copies in the drifting rows
+      const mot = () => ls.get('reroot.motivated', {});
+      const paintMot = () => { const m = mot(); $$('[data-motiv]', root).forEach(b => { const on = !!m[b.dataset.motiv], n = $('b', b);
+        b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); n.textContent = (+n.dataset.base + (on ? 1 : 0)).toLocaleString('en-US'); }); };
+      paintMot();
+      root.addEventListener('click', e => { const b = e.target.closest('[data-motiv]'); if (!b) return; const m = mot(); m[b.dataset.motiv] = !m[b.dataset.motiv]; ls.set('reroot.motivated', m); paintMot();
+        $$(`[data-motiv="${b.dataset.motiv}"]`, root).forEach(x => { x.classList.remove('pop'); void x.offsetWidth; x.classList.add('pop'); }); }, { signal });
       // each phone plays its screen as you scroll past it (p: 0 -> 1)
       const clamp = v => Math.max(0, Math.min(1, v)), seg = (p, a, b) => clamp((p - a) / (b - a));
       const rows = $$('[data-sc]', root).map(row => ({ row, kind: row.dataset.sc, phone: $('.phone', row), last: -1 }));
