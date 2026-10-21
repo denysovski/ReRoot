@@ -28,7 +28,7 @@
         <div class="f-brand"><a class="logo" href="./">RE<b>:</b>ROOT</a>
           <p>A calm, black-and-white tracker for quitting the habits that hold you back. Check in daily, see your patterns and get help when it's hard.</p>
           <div class="actions-row">${user ? '<a class="btn btn-primary btn-sm" data-press href="app">Open app</a>' : '<a class="btn btn-primary btn-sm" data-press href="register">Get started</a><a class="btn-text" href="login">Log in</a>'}</div></div>
-        ${col('Product', [['how-it-works', 'How it works'], ['showcase', 'Showcase'], ['articles', 'Articles'], ['community', 'Community chats']])}
+        ${col('Product', [['how-it-works', 'How it works'], ['showcase', 'Showcase'], ['articles', 'Articles'], ['community', 'Community']])}
         ${col('Company', [['about', 'About Re:Root'], ['faq', 'FAQ'], ['contact', 'Contact']])}
         ${col('Legal', [['terms', 'Terms & conditions'], ['privacy', 'Privacy policy'], ['terms#disclaimer', 'Medical disclaimer']])}
         ${col('Account', user ? [['app', 'Open app'], ['app/today', 'Today\'s check-in'], ['app/progress', 'Your progress']] : [['login', 'Log in'], ['register', 'Create account'], ['how-it-works', 'Getting started']])}
@@ -178,45 +178,47 @@
     addEventListener('scroll', f, { passive: true, signal }); f();
   }
 
-  /* inchworm strip: scrolling down moves the cards right-to-left one at a time; the card leaving on the left
-     squeezes into a sliver while a new one grows in on the right, like an inchworm */
+  /* inchworm strip: scrolling moves the cards right-to-left one at a time; the card leaving on the left squeezes into a
+     sliver while a new one grows in on the right. Upcoming cards on the right are blurred until the strip reaches its end. */
   function inchworm(root, signal) {
     const sec = $('[data-inch]', root); if (!sec) return;
     const track = $('.inch-track', sec), cards = $$('.inch-card', sec), bar = $('.inch-bar i', sec), N = cards.length;
-    let w = 270, g = 22, K = 4, steps = 1, startX = 0, target = 0;
+    let w = 340, g = 24, K = 4, VIS = 6, steps = 1, startX = 0, target = 0;
     const pos = new RR.Spring(0, { eps: .0005 });
     const paint = () => {
-      const p = pos.value; let x = startX - (Math.min(p, 1) * 0);
+      const p = pos.value, clear = clamp(p - (steps - 1)); let x = startX;
       cards.forEach((c, i) => {
         const s = i - p; let f;
-        if (s <= -1 || s >= K) f = 0; else if (s < 0) f = 1 + s; else if (s > K - 1) f = K - s; else f = 1;
-        const cw = w * f;
+        if (s <= -1 || s >= VIS) f = 0; else if (s < 0) f = 1 + s; else if (s > VIS - 1) f = VIS - s; else f = 1;
+        const cw = w * f, blur = Math.max(0, s - (K - 1.6)) * (1 - clear);
         c.style.width = cw.toFixed(2) + 'px'; c.style.transform = `translateX(${x.toFixed(2)}px)`;
-        c.style.visibility = f <= 0.001 ? 'hidden' : '';
-        c.classList.toggle('squeezing', f < 1);
+        c.style.visibility = f <= .001 ? 'hidden' : '';
+        c.style.filter = blur > .02 ? `blur(${(blur * 5).toFixed(1)}px)` : '';
+        c.style.opacity = blur > .02 ? Math.max(.18, 1 - blur * .32).toFixed(3) : '';
         if (f > 0) x += cw + g * f;
       });
-      bar.style.transform = `scaleX(${steps ? clamp(p / steps) : 1})`;
+      bar.style.transform = `scaleX(${clamp(p / steps)})`;
     };
     pos.on(paint);
     const layout = () => {
-      const full = track.clientWidth, narrow = full < 700, vw = full - (narrow ? 32 : 120);
-      w = narrow ? Math.min(230, vw * .62) : Math.min(300, Math.max(240, vw / 5.4)); g = narrow ? 12 : 22;
-      K = Math.max(2, Math.floor((vw + g) / (w + g)));
+      const full = track.clientWidth, narrow = full < 700, pad = narrow ? 16 : 64;
+      g = narrow ? 12 : 24; K = narrow ? 1 : 4; VIS = narrow ? 3 : 6;
+      w = narrow ? Math.min(300, full * .74) : Math.min(420, (full - pad * 2 - (K - 1) * g) / (K + .45));
       steps = Math.max(1, N - K);
-      startX = (full - (K * w + (K - 1) * g)) / 2;
+      startX = pad;
       sec.style.setProperty('--cw', w + 'px');
-      sec.style.height = `calc(100vh + ${steps * (narrow ? 45 : 60)}vh)`;
+      sec.style.height = `calc(100vh + ${steps * (narrow ? 50 : 62)}vh)`;
       onScroll(true);
     };
+    // progress starts while the section is still sliding in and ends exactly when it un-pins, so you glide in and out
     const onScroll = (instant) => {
-      const r = sec.getBoundingClientRect(), span = r.height - innerHeight, p = span > 0 ? clamp(-r.top / span) : 0;
-      const t = Math.min(steps, Math.round(p * steps));
+      const r = sec.getBoundingClientRect(), vh = innerHeight, span = (r.height - vh) + vh * .45;
+      const p = span > 0 ? clamp((vh * .45 - r.top) / span) : 0, t = Math.min(steps, Math.round(p * steps));
       if (instant === true || motion.reduce) { target = t; pos.set(t); paint(); return; }
-      if (t !== target) { target = t; pos.to(t, { response: .62, damping: .82 }); }
+      if (t !== target) { target = t; pos.to(t, { response: .85, damping: .92 }); }
     };
     addEventListener('scroll', () => onScroll(false), { passive: true, signal });
-    const ro = new ResizeObserver(layout); ro.observe(track); signal.addEventListener('abort', () => { ro.disconnect(); pos.stop && pos.stop(); });
+    const ro = new ResizeObserver(layout); ro.observe(track); signal.addEventListener('abort', () => ro.disconnect());
     layout();
   }
 

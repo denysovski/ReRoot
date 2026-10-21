@@ -183,7 +183,7 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
       </div>
       <div class="dash-links">
         <button class="glass card link-card" data-act="article" data-a="${tip.id}" style="text-align:left"><span class="eyebrow">Today's read · ${tip.min} min</span><h3>${esc(tip.t)}</h3><p>${esc(tip.d)}</p></button>
-        <a class="glass card link-card" href="community"><span class="eyebrow">Community</span><h3>Talk to people quitting the same thing</h3><p>Rooms for nail biting, porn and masturbation, smoking, late nights and wins.</p></a>
+        <a class="glass card link-card" href="community"><span class="eyebrow">Community</span><h3>You are not doing this alone</h3><p>See how many people around the world are quitting the same habits.</p></a>
       </div>`;
     const hn = $('#home-n'); hn && countUp(hn, bn);
     $$('[data-count]', r).forEach(el => countUp(el, +el.dataset.count));
