@@ -222,8 +222,24 @@
     layout();
   }
 
+  /* letter swap: every letter sits in its own mask; as you scroll, it slides out and its outlined twin slides in */
+  function letterSwap(root, signal) {
+    const sec = $('[data-swap]', root); if (!sec) return;
+    const lines = $$('.sw-line', sec).map((li, k) => ({ dir: k % 2 ? 1 : -1, ls: $$('.sw-l', li).map(l => ({ a: l.firstElementChild, b: l.lastElementChild })) }));
+    const sm = t => t * t * (3 - 2 * t);
+    const f = () => {
+      const r = sec.getBoundingClientRect(), span = Math.max(1, r.height - innerHeight * .55), p = motion.reduce ? 0 : clamp(-r.top / span);
+      lines.forEach(({ dir, ls }, k) => ls.forEach((l, j) => {
+        const n = ls.length, order = dir > 0 ? n - 1 - j : j, q = sm(clamp(p * 1.9 - k * .18 - order / n * .55));
+        l.a.style.transform = `translateY(${(dir * -105 * q).toFixed(2)}%)`; l.b.style.transform = `translateY(${(dir * 105 * (1 - q)).toFixed(2)}%)`;
+      }));
+    };
+    addEventListener('scroll', f, { passive: true, signal }); addEventListener('resize', f, { signal }); f();
+  }
+
   function enhance(root, signal) {
     thread(root, signal);
+    letterSwap(root, signal);
     inchworm(root, signal);
     heroOrb(root, signal);
     scrollScenes(root, signal);

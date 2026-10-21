@@ -1286,3 +1286,17 @@ a.logo-pill:hover{transform:scale(1.04)}
 .wh-bar i{display:block;height:100%;width:var(--w);background:var(--fg);border-radius:inherit}
 @media (max-width:620px){.wheel{width:200px;height:260px}.wh-card{padding:18px}.wh-card h3{font-size:20px}}
 .demo-note{font-size:12.5px;color:var(--muted);text-align:center;padding-bottom:20px}
+
+/* ---------- how it works: scroll letter swap ---------- */
+.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.swap{position:relative;height:175vh}
+.swap-sticky{position:sticky;top:0;height:100vh;height:100svh;display:grid;align-content:center;padding:96px var(--gutter-r) 40px var(--gutter);overflow:hidden}
+.swap-words{list-style:none;margin:0;padding:0;display:grid;gap:.02em;font-size:clamp(76px,15.5vw,250px);font-weight:600;letter-spacing:-.055em;line-height:.9}
+.sw-line{display:flex;white-space:nowrap}
+.sw-1{justify-content:flex-end}
+.sw-l{position:relative;display:inline-block;overflow:hidden;padding:0 .015em;margin:0 -.015em}
+.sw-a,.sw-b{display:block;will-change:transform}
+.sw-b{position:absolute;inset:0;padding:inherit;color:transparent;-webkit-text-stroke:2px var(--fg);transform:translateY(105%)}
+.sw-2 .sw-b,.sw-0 .sw-b{transform:translateY(-105%)}
+.swap + .steps{margin-top:-18vh;position:relative;z-index:1}
+@media (max-width:620px){.swap{height:150vh}.sw-b{-webkit-text-stroke:1.2px var(--fg)}}
