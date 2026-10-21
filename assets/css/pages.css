@@ -1373,3 +1373,33 @@ a.logo-pill:hover{transform:scale(1.04)}
 .inch-glow i:nth-child(3){right:6%;top:5%;width:30%;height:70%;background:#f472b6}
 :root[data-theme="light"] .inch-glow{opacity:.22}
 .inch-track,.inch-bar{position:relative;z-index:1}
+
+/* ---------- round: fixes ---------- */
+.inch-bar{transition:opacity .2s linear}
+/* stories: no backdrop sampling inside the masked rows (it painted a dark band) */
+.st-row .story{backdrop-filter:none;-webkit-backdrop-filter:none;background:var(--surface)}
+.st-row-wrap{padding-block:6px}
+/* questions sit above the big letters */
+.sw-qs{z-index:2}
+.swap-words{z-index:1}
+/* community globe scrolls freely */
+.globe-sec{height:auto}
+.globe-sticky{position:relative;height:min(860px,100vh)}
+/* bigger habit wheel (~40%) */
+.wheel-stage{--wr:min(780px,92vw);height:clamp(520px,62vw,660px)}
+.wheel{width:364px;height:420px}
+.wh-card{padding:32px;border-radius:30px}
+.wh-card h3{font-size:32px}
+.wh-card p{font-size:16px}
+.wh-card p b{font-size:20px}
+@media (max-width:620px){.wheel{width:250px;height:310px}.wh-card h3{font-size:22px}.wheel-stage{--wr:82vw;height:420px}}
+/* closing line: letters land with a wave */
+.drop-sec{text-align:center;display:grid;justify-items:center;gap:22px;padding-block:clamp(100px,14vw,200px)}
+.drop-h{font-size:clamp(46px,7vw,112px);font-weight:600;letter-spacing:-.045em;line-height:1.02;max-width:14ch}
+.dw{display:inline-block;white-space:nowrap}
+.dc{display:inline-block;opacity:0;transform:translateY(var(--y)) rotate(var(--r)) skewX(-14deg);transition:transform .9s cubic-bezier(.22,1.5,.36,1),opacity .35s ease;transition-delay:calc(var(--k) * 32ms)}
+.drop-h.go .dc{opacity:1;transform:none}
+.drop-sub{color:var(--muted);font-size:clamp(17px,1.5vw,20px);max-width:44ch}
+.drop-actions{justify-content:center}
+@media (prefers-reduced-motion: reduce){.dc{opacity:1;transform:none;transition:none}}
+.wh-item{backface-visibility:hidden;-webkit-backface-visibility:hidden}.wh-card{background:var(--surface)!important}

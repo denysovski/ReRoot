@@ -198,6 +198,7 @@
         if (f > 0) x += cw + g * f;
       });
       bar.style.transform = `scaleX(${clamp(p / steps)})`;
+      bar.parentElement.style.opacity = (1 - clamp((p - (steps - .25)) / .25)).toFixed(3);
     };
     const bub = $('.inch-bubble', sec);
     pos.on(paint);
