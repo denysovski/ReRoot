@@ -1300,3 +1300,76 @@ a.logo-pill:hover{transform:scale(1.04)}
 .sw-2 .sw-b,.sw-0 .sw-b{transform:translateY(-105%)}
 .swap + .steps{margin-top:-18vh;position:relative;z-index:1}
 @media (max-width:620px){.swap{height:150vh}.sw-b{-webkit-text-stroke:1.2px var(--fg)}}
+
+/* ---------- how it works: slot-machine letters, floating questions, intro ---------- */
+.sw-b{color:inherit;-webkit-text-stroke:0;transform:translateY(-100%)}
+.sw-2 .sw-b,.sw-0 .sw-b{transform:translateY(-100%)}
+.sw-qs{position:absolute;inset:80px 0 0;pointer-events:none}
+.sw-q{position:absolute;rotate:var(--r);opacity:0;padding:8px 14px;border-radius:999px;font-size:clamp(13px,1.05vw,16px);font-weight:500;white-space:nowrap;
+  background:color-mix(in srgb,var(--surface) 70%,transparent);box-shadow:inset 0 0 0 1px var(--line);color:var(--muted);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.swap-words{position:relative;z-index:1}
+@media (max-width:620px){.sw-q{font-size:11.5px;padding:6px 10px}}
+.qintro{position:relative;min-height:100vh;min-height:100svh;display:grid;align-items:center;overflow:hidden}
+.qi-in{display:grid;grid-template-columns:1.1fr 1fr;align-items:center;gap:40px;padding-block:120px 80px}
+@media (max-width:860px){.qi-in{grid-template-columns:1fr}.qi-mark{order:-1;justify-self:center}}
+.qi-copy{display:grid;gap:22px;will-change:transform,opacity}
+.qi-small{font-size:15px;color:var(--muted)}
+.qi-h{font-size:clamp(44px,6vw,92px);font-weight:600;letter-spacing:-.045em;line-height:.98}
+.qi-h span{display:inline-block;color:transparent;-webkit-text-stroke:2px var(--fg);margin-left:.06em}
+.qi-lead{font-size:clamp(17px,1.5vw,21px);color:var(--muted);max-width:36ch}
+.qi-mark{position:relative;width:min(440px,70vw);aspect-ratio:1;display:grid;place-items:center;will-change:transform,opacity}
+.qm-q{font-size:min(320px,52vw);font-weight:600;line-height:1;color:transparent;-webkit-text-stroke:2px var(--fg);animation:qmFloat 6s ease-in-out infinite}
+.qm-ring{position:absolute;inset:6%;border-radius:50%;border:1px dashed color-mix(in srgb,var(--fg) 30%,transparent);animation:qmSpin 40s linear infinite}
+.qm-ring.r2{inset:-4%;border-style:solid;border-color:color-mix(in srgb,var(--fg) 12%,transparent);animation-duration:70s;animation-direction:reverse}
+@keyframes qmFloat{50%{transform:translateY(-14px) rotate(-3deg)}}
+@keyframes qmSpin{to{transform:rotate(360deg)}}
+.qi-cue{position:absolute;left:50%;bottom:30px;translate:-50% 0;display:grid;justify-items:center;gap:10px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.qi-cue i{width:1.5px;height:46px;background:linear-gradient(var(--fg),transparent);animation:cue 1.8s var(--ease) infinite;transform-origin:50% 0}
+@keyframes cue{0%{transform:scaleY(0);opacity:1}70%{transform:scaleY(1);opacity:1}100%{transform:scaleY(1);opacity:0}}
+@media (prefers-reduced-motion: reduce){.qm-q,.qm-ring,.qi-cue i{animation:none}}
+
+/* ---------- inchworm: end bubble ---------- */
+.inch-sticky{position:sticky}
+.inch-bubble{position:absolute;left:50%;top:50%;z-index:5;display:flex;gap:14px;align-items:center;padding:18px 22px 18px 18px;border-radius:24px;max-width:min(460px,90vw);
+  background:color-mix(in srgb,var(--surface) 80%,transparent);backdrop-filter:blur(22px) saturate(1.3);-webkit-backdrop-filter:blur(22px) saturate(1.3);box-shadow:inset 0 0 0 1px var(--line),0 30px 80px -20px rgba(0,0,0,.6);
+  opacity:0;transform:translate(-50%,-40%) scale(.92);pointer-events:none;transition:opacity .5s var(--ease),transform .7s cubic-bezier(.3,1.4,.5,1)}
+.inch-bubble.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.inch-bubble b{display:block;font-size:19px;font-weight:600;letter-spacing:-.02em}
+.inch-bubble span:not(.ib-ic){font-size:14px;color:var(--muted)}
+.ib-ic{width:44px;height:44px;border-radius:14px;background:var(--fg);color:var(--bg);display:grid;place-items:center;flex:none}
+.ib-ic svg{width:22px;height:22px}
+
+/* ---------- inchworm: black and white scenes + textures ---------- */
+.fx{background:radial-gradient(120% 90% at 50% 100%,#1b1b1b 0%,#060606 70%)}
+.fx-orb .halo{background:radial-gradient(circle,rgba(255,255,255,.32),rgba(255,255,255,.08) 40%,transparent 68%)}
+.fx-orb .core{background:radial-gradient(circle at 35% 30%,#fff 0%,#e6e6e6 25%,#8a8a8a 60%,#2a2a2a 100%);box-shadow:0 0 60px 10px rgba(255,255,255,.35),0 0 140px 40px rgba(255,255,255,.12)}
+.fx-orb .ring{border-color:rgba(255,255,255,.55);box-shadow:0 0 18px rgba(255,255,255,.2)}
+.fx-rain{background:linear-gradient(180deg,#0b0b0b 0%,#161616 60%,#080808 100%)}
+.fx-rain .drops i{background:linear-gradient(180deg,transparent,rgba(255,255,255,.85))}
+.fx-rain .floor{background:radial-gradient(ellipse at 50% 30%,rgba(255,255,255,.14),transparent 70%)}
+.fx-rain .floor i{border-color:rgba(255,255,255,.55)}
+.inch-card::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:2;border-radius:inherit;opacity:.5}
+.ic-title::after{background:repeating-radial-gradient(circle at 100% 0,transparent 0 22px,color-mix(in srgb,var(--fg) 9%,transparent) 22px 23px)}
+.ic-img::after{opacity:.35;mix-blend-mode:screen}
+.inch-card:nth-child(2)::after{background:repeating-radial-gradient(circle at 50% 46%,transparent 0 18px,rgba(255,255,255,.07) 18px 19px)}
+.inch-card:nth-child(4)::after{background:radial-gradient(circle,rgba(255,255,255,.12) 1px,transparent 1.6px) 0 0/14px 14px}
+.inch-card:nth-child(6)::after{background:repeating-radial-gradient(circle at 0 100%,transparent 0 26px,rgba(255,255,255,.08) 26px 27px)}
+.inch-card:nth-child(8)::after{background:radial-gradient(circle,transparent 5px,rgba(255,255,255,.1) 5.5px,transparent 6.5px) 0 0/24px 24px}
+.ic-text::after{opacity:.6}
+.inch-card:nth-child(3)::after{background:radial-gradient(circle,color-mix(in srgb,var(--bg) 14%,transparent) 1.2px,transparent 1.8px) 0 0/16px 16px}
+.inch-card:nth-child(5)::after{background:repeating-radial-gradient(circle at 100% 100%,transparent 0 20px,color-mix(in srgb,var(--bg) 10%,transparent) 20px 21px)}
+.inch-card:nth-child(7)::after{background:radial-gradient(circle,transparent 7px,color-mix(in srgb,var(--bg) 12%,transparent) 7.5px,transparent 8.5px) 0 0/28px 28px}
+.inch-card:nth-child(9)::after{background:repeating-radial-gradient(circle at 50% 120%,transparent 0 16px,color-mix(in srgb,var(--bg) 10%,transparent) 16px 17px)}
+.inch-card .ic-in{z-index:1}
+.ic-text .ic-in,.ic-title .ic-in{z-index:3}
+/* stories: keep drifting, one monochrome avatar */
+.st-row-wrap:hover .st-row{animation-play-state:running}
+.st-av{background:var(--fg)!important;color:var(--bg)}
+/* colour glow now sits behind the Simple on purpose cards */
+.inch-glow{position:absolute;left:0;right:0;top:50%;height:70%;translate:0 -50%;pointer-events:none;filter:blur(90px);opacity:.38;z-index:0}
+.inch-glow i{position:absolute;border-radius:50%}
+.inch-glow i:nth-child(1){left:6%;top:10%;width:34%;height:70%;background:#6d5dfc}
+.inch-glow i:nth-child(2){left:38%;top:30%;width:30%;height:65%;background:#22c3ee}
+.inch-glow i:nth-child(3){right:6%;top:5%;width:30%;height:70%;background:#f472b6}
+:root[data-theme="light"] .inch-glow{opacity:.22}
+.inch-track,.inch-bar{position:relative;z-index:1}

@@ -199,6 +199,7 @@
       });
       bar.style.transform = `scaleX(${clamp(p / steps)})`;
     };
+    const bub = $('.inch-bubble', sec);
     pos.on(paint);
     const layout = () => {
       const full = track.clientWidth, narrow = full < 700, pad = narrow ? 16 : 64;
@@ -207,13 +208,19 @@
       steps = Math.max(1, N - K);
       startX = pad;
       sec.style.setProperty('--cw', w + 'px');
-      sec.style.height = `calc(100vh + ${steps * (narrow ? 50 : 62)}vh)`;
+      sec.style.height = `calc(100vh + ${steps * (narrow ? 50 : 62) + 70}vh)`;
       onScroll(true);
     };
     // progress starts while the section is still sliding in and ends exactly when it un-pins, so you glide in and out
+    let snapping = false, lastY = scrollY;
     const onScroll = (instant) => {
-      const r = sec.getBoundingClientRect(), vh = innerHeight, span = (r.height - vh) + vh * .45;
-      const p = span > 0 ? clamp((vh * .45 - r.top) / span) : 0, t = Math.min(steps, Math.round(p * steps));
+      const r = sec.getBoundingClientRect(), vh = innerHeight, span = (r.height - vh) + vh * .45, down = scrollY > lastY; lastY = scrollY;
+      // arriving fast from above: glide the last bit and settle the strip into place instead of slamming into the pin
+      if (instant !== true && RR.lenis && down && !snapping && r.top > 2 && r.top < vh * .45 && Math.abs(RR.lenis.velocity) > 6) {
+        snapping = true; RR.lenis.scrollTo(scrollY + r.top, { duration: 1.1, easing: x => 1 - Math.pow(1 - x, 4), lock: true, onComplete: () => setTimeout(() => snapping = false, 200) });
+      }
+      const raw = span > 0 ? clamp((vh * .45 - r.top) / span) : 0, p = clamp(raw / .8), t = Math.min(steps, Math.round(p * steps));
+      bub && bub.classList.toggle('show', raw > .86 && raw < 1.02);
       if (instant === true || motion.reduce) { target = t; pos.set(t); paint(); return; }
       if (t !== target) { target = t; pos.to(t, { response: .85, damping: .92 }); }
     };
@@ -222,19 +229,27 @@
     layout();
   }
 
-  /* letter swap: every letter sits in its own mask; as you scroll, it slides out and its outlined twin slides in */
+  /* letter roll: like a slot machine, every letter rolls down out of its mask and the same letter drops in from above.
+     Small questions fade in around the title as you scroll. */
   function letterSwap(root, signal) {
     const sec = $('[data-swap]', root); if (!sec) return;
-    const lines = $$('.sw-line', sec).map((li, k) => ({ dir: k % 2 ? 1 : -1, ls: $$('.sw-l', li).map(l => ({ a: l.firstElementChild, b: l.lastElementChild })) }));
-    const sm = t => t * t * (3 - 2 * t);
+    const lines = $$('.sw-line', sec).map(li => $$('.sw-l', li).map(l => ({ a: l.firstElementChild, b: l.lastElementChild })));
+    const qs = $$('.sw-q', sec), ROLLS = 2;
     const f = () => {
       const r = sec.getBoundingClientRect(), span = Math.max(1, r.height - innerHeight * .55), p = motion.reduce ? 0 : clamp(-r.top / span);
-      lines.forEach(({ dir, ls }, k) => ls.forEach((l, j) => {
-        const n = ls.length, order = dir > 0 ? n - 1 - j : j, q = sm(clamp(p * 1.9 - k * .18 - order / n * .55));
-        l.a.style.transform = `translateY(${(dir * -105 * q).toFixed(2)}%)`; l.b.style.transform = `translateY(${(dir * 105 * (1 - q)).toFixed(2)}%)`;
+      lines.forEach((ls, k) => ls.forEach((l, j) => {
+        const q = clamp(p * 1.7 - k * .12 - j / ls.length * .5), e = q * q * (3 - 2 * q), fr = (e * ROLLS) % 1;
+        l.a.style.transform = `translateY(${(fr * 100).toFixed(2)}%)`; l.b.style.transform = `translateY(${((fr - 1) * 100).toFixed(2)}%)`;
       }));
+      qs.forEach((q, k) => { const v = clamp((p - .06 - k * .07) / .14); q.style.opacity = v.toFixed(3); q.style.translate = `0 ${(1 - v) * 18}px`; q.style.filter = v < 1 ? `blur(${((1 - v) * 6).toFixed(1)}px)` : ''; });
     };
     addEventListener('scroll', f, { passive: true, signal }); addEventListener('resize', f, { signal }); f();
+    // the intro question mark grows and fades as you scroll into the title
+    const qi = $('[data-qintro]', root);
+    if (qi) { const mark = $('.qi-mark', qi), copy = $('.qi-copy', qi);
+      const g = () => { const r = qi.getBoundingClientRect(), p = motion.reduce ? 0 : clamp(-r.top / r.height);
+        mark.style.transform = `scale(${1 + p * .6}) rotate(${p * 12}deg)`; mark.style.opacity = (1 - p * 1.1).toFixed(3); copy.style.transform = `translateY(${-p * 80}px)`; copy.style.opacity = (1 - p * 1.3).toFixed(3); };
+      addEventListener('scroll', g, { passive: true, signal }); g(); }
   }
 
   function enhance(root, signal) {
