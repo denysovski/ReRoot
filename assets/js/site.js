@@ -178,8 +178,51 @@
     addEventListener('scroll', f, { passive: true, signal }); f();
   }
 
+  /* inchworm strip: scrolling down moves the cards right-to-left one at a time; the card leaving on the left
+     squeezes into a sliver while a new one grows in on the right, like an inchworm */
+  function inchworm(root, signal) {
+    const sec = $('[data-inch]', root); if (!sec) return;
+    const track = $('.inch-track', sec), cards = $$('.inch-card', sec), bar = $('.inch-bar i', sec), N = cards.length;
+    let w = 270, g = 22, K = 4, steps = 1, startX = 0, target = 0;
+    const pos = new RR.Spring(0, { eps: .0005 });
+    const paint = () => {
+      const p = pos.value; let x = startX - (Math.min(p, 1) * 0);
+      cards.forEach((c, i) => {
+        const s = i - p; let f;
+        if (s <= -1 || s >= K) f = 0; else if (s < 0) f = 1 + s; else if (s > K - 1) f = K - s; else f = 1;
+        const cw = w * f;
+        c.style.width = cw.toFixed(2) + 'px'; c.style.transform = `translateX(${x.toFixed(2)}px)`;
+        c.style.visibility = f <= 0.001 ? 'hidden' : '';
+        c.classList.toggle('squeezing', f < 1);
+        if (f > 0) x += cw + g * f;
+      });
+      bar.style.transform = `scaleX(${steps ? clamp(p / steps) : 1})`;
+    };
+    pos.on(paint);
+    const layout = () => {
+      const full = track.clientWidth, narrow = full < 700, vw = full - (narrow ? 32 : 120);
+      w = narrow ? Math.min(230, vw * .62) : Math.min(300, Math.max(240, vw / 5.4)); g = narrow ? 12 : 22;
+      K = Math.max(2, Math.floor((vw + g) / (w + g)));
+      steps = Math.max(1, N - K);
+      startX = (full - (K * w + (K - 1) * g)) / 2;
+      sec.style.setProperty('--cw', w + 'px');
+      sec.style.height = `calc(100vh + ${steps * (narrow ? 45 : 60)}vh)`;
+      onScroll(true);
+    };
+    const onScroll = (instant) => {
+      const r = sec.getBoundingClientRect(), span = r.height - innerHeight, p = span > 0 ? clamp(-r.top / span) : 0;
+      const t = Math.min(steps, Math.round(p * steps));
+      if (instant === true || motion.reduce) { target = t; pos.set(t); paint(); return; }
+      if (t !== target) { target = t; pos.to(t, { response: .62, damping: .82 }); }
+    };
+    addEventListener('scroll', () => onScroll(false), { passive: true, signal });
+    const ro = new ResizeObserver(layout); ro.observe(track); signal.addEventListener('abort', () => { ro.disconnect(); pos.stop && pos.stop(); });
+    layout();
+  }
+
   function enhance(root, signal) {
     thread(root, signal);
+    inchworm(root, signal);
     heroOrb(root, signal);
     scrollScenes(root, signal);
     const user = auth.current();

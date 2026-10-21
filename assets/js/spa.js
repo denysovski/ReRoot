@@ -56,7 +56,7 @@
     if (m.layout !== 'app') cur.app = null;
     cur.layout = m.layout; cur.user = user && user.email;
     const target = u.hash && document.getElementById(u.hash.slice(1));
-    target ? target.scrollIntoView() : scrollTo(0, 0);
+    if (RR.lenis) { RR.lenis.resize(); RR.lenis.scrollTo(target || 0, { immediate: true, force: true }); } else target ? target.scrollIntoView() : scrollTo(0, 0);
   }
 
   function navigate(path, { replace = false } = {}) {
@@ -75,9 +75,17 @@
     if (url.origin !== location.origin || !url.pathname.startsWith(BASE) || /\.[a-z0-9]+$/i.test(url.pathname) && !/\.html$/.test(url.pathname)) return;
     e.preventDefault();
     const path = rel(url.pathname) + url.search + url.hash;
-    if (url.pathname === location.pathname && url.hash) { const t = document.getElementById(url.hash.slice(1)); t && t.scrollIntoView({ behavior: motion.reduce ? 'auto' : 'smooth' }); history.replaceState(null, '', url); return; }
+    if (url.pathname === location.pathname && url.hash) { const t = document.getElementById(url.hash.slice(1)); t && (RR.lenis ? RR.lenis.scrollTo(t, { offset: -90, duration: 1.2 }) : t.scrollIntoView({ behavior: motion.reduce ? 'auto' : 'smooth' })); history.replaceState(null, '', url); return; }
     navigate(path);
   });
+
+  // smooth, weighted scrolling (Lenis); native scrolling stays for reduced motion and touch
+  if (window.Lenis && !motion.reduce) {
+    const lenis = new Lenis({ lerp: .085, smoothWheel: true, wheelMultiplier: 1, touchMultiplier: 1.4 });
+    RR.lenis = lenis;
+    const loop = t => { lenis.raf(t); requestAnimationFrame(loop); }; requestAnimationFrame(loop);
+    new ResizeObserver(() => lenis.resize()).observe(document.body);
+  }
 
   // restore a deep link that GitHub Pages sent through 404.html
   try { const r = sessionStorage.getItem('reroot.redirect'); if (r) { sessionStorage.removeItem('reroot.redirect'); history.replaceState(null, '', r); } } catch (e) {}

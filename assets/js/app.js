@@ -116,7 +116,7 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
     requestAnimationFrame(() => placeInd(instant));
     $$('.view').forEach(s => s.hidden = s.dataset.view !== v);
     incoming = $(`.view[data-view="${v}"]`); RENDER[v]();
-    if (changed) { window.scrollTo(0, 0); if (instant) viewP.set(1); else { viewP.set(0); viewP.to(1, { response: .42, damping: 1 }); } }
+    if (changed) { RR.lenis ? RR.lenis.scrollTo(0, { immediate: true, force: true }) : window.scrollTo(0, 0); if (instant) viewP.set(1); else { viewP.set(0); viewP.to(1, { response: .42, damping: 1 }); } }
     if (!fromRouter) RR.pushPath(v === 'home' ? 'app' : 'app/' + v);
     document.title = (v === 'home' ? 'Home' : v[0].toUpperCase() + v.slice(1)) + ' · Re:Root';
   }
@@ -389,12 +389,12 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
     $('#sheet-title').textContent = title; $('#sheet-body').innerHTML = html; $('#sheet-body').scrollTop = 0;
     const was = sheet.hidden; sheet.hidden = false; scrim.hidden = false; sheetH = sheet.offsetHeight + 30;
     if (was) sheetY.set(sheetH);
-    sheetY.to(0, { response: .32, damping: .86 }); document.body.style.overflow = 'hidden';
+    sheetY.to(0, { response: .32, damping: .86 }); document.body.style.overflow = 'hidden'; RR.lenis && RR.lenis.stop();
     setTimeout(() => { const f = $('#sheet-body input'); (f || $('.close-x', sheet)).focus({ preventScroll: true }); }, motion.reduce ? 0 : 280);
   }
   function closeSheet(v = 0) {
     sheetY.to(sheetH, { response: .3, damping: 1, velocity: v, onRest: () => { sheet.hidden = true; scrim.hidden = true; } });
-    document.body.style.overflow = ''; lastFocus && lastFocus.focus && lastFocus.focus({ preventScroll: true });
+    document.body.style.overflow = ''; RR.lenis && RR.lenis.start(); lastFocus && lastFocus.focus && lastFocus.focus({ preventScroll: true });
   }
   scrim.addEventListener('click', () => closeSheet());
   addEventListener('keydown', e => { if (e.key === 'Escape' && !sheet.hidden) closeSheet(); }, { signal });
