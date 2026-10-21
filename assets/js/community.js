@@ -14,17 +14,24 @@
     let W = 0, H = 0, dpr = 1, rot = [20, -25], vel = .12, drag = null, raf = 0, t0 = performance.now(), world = null;
     const proj = d3.geoOrthographic().clipAngle(90).precision(.4), path = d3.geoPath(proj, ctx), grat = d3.geoGraticule10(), sphere = { type: 'Sphere' };
     const isLight = () => document.documentElement.dataset.theme === 'light' || (!document.documentElement.dataset.theme && matchMedia('(prefers-color-scheme: light)').matches);
-    const size = () => { dpr = Math.min(2, devicePixelRatio || 1); W = cv.clientWidth; H = cv.clientHeight; cv.width = W * dpr; cv.height = H * dpr; };
+    const size = () => { dpr = Math.min(1.5, devicePixelRatio || 1); const w = cv.clientWidth, h = cv.clientHeight; if (w === W && h === H) return; W = w; H = h; cv.width = W * dpr; cv.height = H * dpr; };
     const ro = new ResizeObserver(size); ro.observe(cv); size();
     loadWorld().then(w => world = w).catch(() => {});
     let visible = true; const io = new IntersectionObserver(es => visible = es[0].isIntersecting); io.observe(cv);
+    // pre-computed dot vectors + a glow sprite: one cheap drawImage per dot instead of shadowBlur paths
+    const V = DOTS.filter((d, k) => d[2] > .55 || k % 2 === 0).map(d => { const la = d[1] * Math.PI / 180, lo = d[0] * Math.PI / 180; return [d[0], d[1], d[2], Math.sin(la), Math.cos(la), lo]; });
+    const sprite = (light) => { const c = document.createElement('canvas'), z = 32; c.width = c.height = z; const g = c.getContext('2d'), gr = g.createRadialGradient(z / 2, z / 2, 0, z / 2, z / 2, z / 2);
+      gr.addColorStop(0, light ? 'rgba(80,50,255,1)' : 'rgba(235,225,255,1)'); gr.addColorStop(.22, light ? 'rgba(100,70,255,.9)' : 'rgba(170,140,255,.9)'); gr.addColorStop(1, 'rgba(140,110,255,0)');
+      g.fillStyle = gr; g.fillRect(0, 0, z, z); return c; };
+    const SPR = { d: sprite(false), l: sprite(true) };
+    let last = 0;
     const draw = now => {
       raf = requestAnimationFrame(draw); if (!W || !visible) return;
-      if (!drag && !motion.reduce) rot[0] += vel;
+      if (now - last < 1000 / 45) return; last = now;   // ~45 fps is plenty for a slow spin
+      if (!drag && !motion.reduce) rot[0] += vel * 1.33;
       const L = isLight(), R = Math.min(W, H) * .44;
       proj.scale(R).translate([W / 2, H / 2]).rotate(rot);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
-      // ocean
       ctx.beginPath(); path(sphere); ctx.fillStyle = L ? '#e4e4e8' : '#101012'; ctx.fill();
       ctx.beginPath(); path(grat); ctx.strokeStyle = L ? 'rgba(0,0,0,.06)' : 'rgba(255,255,255,.05)'; ctx.lineWidth = .7; ctx.stroke();
       if (world) {
@@ -32,25 +39,21 @@
         ctx.beginPath(); path(world.borders); ctx.strokeStyle = L ? 'rgba(0,0,0,.22)' : 'rgba(255,255,255,.22)'; ctx.lineWidth = .6; ctx.stroke();
       }
       ctx.beginPath(); path(sphere); ctx.strokeStyle = L ? 'rgba(0,0,0,.18)' : 'rgba(255,255,255,.18)'; ctx.lineWidth = 1; ctx.stroke();
-      // violet user dots on the visible side
-      const tt = (now - t0) / 1000, c = proj.rotate(), lam = -c[0] * Math.PI / 180, phi = -c[1] * Math.PI / 180, sp = Math.sin(phi), cp = Math.cos(phi), ds = Math.max(1.3, R / 230);
-      ctx.shadowColor = L ? 'rgba(109,77,255,.6)' : 'rgba(170,140,255,.95)'; ctx.shadowBlur = L ? 3 : 7;
-      for (let k = 0; k < DOTS.length; k++) {
-        const d = DOTS[k], la = d[1] * Math.PI / 180, lo = d[0] * Math.PI / 180, cc = sp * Math.sin(la) + cp * Math.cos(la) * Math.cos(lo - lam); if (cc <= .03) continue;
+      const c = proj.rotate(), lam = -c[0] * Math.PI / 180, phi = -c[1] * Math.PI / 180, sp = Math.sin(phi), cp = Math.cos(phi), base = Math.max(5, R / 42), img = L ? SPR.l : SPR.d;
+      for (let k = 0; k < V.length; k++) {
+        const d = V[k], cc = sp * d[3] + cp * d[4] * Math.cos(d[5] - lam); if (cc <= .04) continue;
         const pt = proj([d[0], d[1]]); if (!pt) continue;
-        const b = d[2], tw = .8 + .2 * Math.sin(tt * 1.6 + k);
-        ctx.globalAlpha = Math.min(1, cc * 1.4) * (.25 + .75 * b) * tw;
-        ctx.fillStyle = L ? `rgb(${Math.round(120 - 60 * b)},${Math.round(90 - 40 * b)},255)` : `rgb(${Math.round(150 + 90 * b)},${Math.round(125 + 100 * b)},255)`;
-        ctx.beginPath(); ctx.arc(pt[0], pt[1], ds * (.7 + b * .8), 0, 7); ctx.fill();
+        const sz = base * (.55 + d[2] * .75); ctx.globalAlpha = Math.min(1, cc * 1.5) * (.3 + .7 * d[2]);
+        ctx.drawImage(img, pt[0] - sz / 2, pt[1] - sz / 2, sz, sz);
       }
-      ctx.shadowBlur = 0; ctx.globalAlpha = 1;
+      ctx.globalAlpha = 1;
     };
     raf = requestAnimationFrame(draw);
-    cv.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY, r: rot.slice() }; cv.setPointerCapture(e.pointerId); cv.classList.add('grab'); }, { signal });
-    cv.addEventListener('pointermove', e => { if (!drag) return; const k = 180 / (Math.PI * Math.min(W, H) * .44); const nx = drag.r[0] + (e.clientX - drag.x) * k;
+    cv.addEventListener('pointerdown', e => { e.preventDefault(); drag = { x: e.clientX, y: e.clientY, r: rot.slice() }; cv.classList.add('grab'); }, { signal });
+    addEventListener('pointermove', e => { if (!drag) return; const k = 180 / (Math.PI * Math.min(W, H) * .44); const nx = drag.r[0] + (e.clientX - drag.x) * k;
       vel = clamp((nx - rot[0]) * .5, -3, 3); rot = [nx, clamp(drag.r[1] - (e.clientY - drag.y) * k, -60, 60)]; }, { signal });
     const up = () => { if (!drag) return; drag = null; cv.classList.remove('grab'); const fade = () => { vel += (.12 - vel) * .04; if (Math.abs(vel - .12) > .01 && !drag) requestAnimationFrame(fade); }; fade(); };
-    cv.addEventListener('pointerup', up, { signal }); cv.addEventListener('pointercancel', up, { signal });
+    addEventListener('pointerup', up, { signal }); addEventListener('pointercancel', up, { signal });
     signal.addEventListener('abort', () => { cancelAnimationFrame(raf); ro.disconnect(); io.disconnect(); });
   }
 
