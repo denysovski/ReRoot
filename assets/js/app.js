@@ -145,11 +145,19 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
   // tabs slide like pages: the old view leaves to one side while the new one comes in from the other
   let outgoing = null, slideDir = 1;
   const resetOut = () => { if (!outgoing) return; outgoing.hidden = true; Object.assign(outgoing.style, { position: '', top: '', left: '', right: '', transform: '' }); outgoing = null; };
-  viewP.on(p => {
+  // time-based slide with a long, soft ease-out so it settles without a jolt at the end
+  let slideRaf = 0;
+  const easeOut = t => 1 - Math.pow(1 - t, 5);
+  function paintSlide(p) {
     const W = innerWidth * .9;
-    if (incoming) incoming.style.transform = p >= .997 ? '' : `translate3d(${(slideDir * (1 - p) * W).toFixed(1)}px,0,0)`;
-    if (outgoing) { if (p >= .997) resetOut(); else outgoing.style.transform = `translate3d(${(-slideDir * p * W).toFixed(1)}px,0,0)`; }
-  });
+    if (incoming) incoming.style.transform = p >= 1 ? '' : `translate3d(${(slideDir * (1 - p) * W).toFixed(2)}px,0,0)`;
+    if (outgoing) { if (p >= 1) resetOut(); else outgoing.style.transform = `translate3d(${(-slideDir * p * W).toFixed(2)}px,0,0)`; }
+  }
+  function runSlide() {
+    cancelAnimationFrame(slideRaf); const t0 = performance.now(), D = 820;
+    const step = n => { const t = Math.min(1, Math.max(0, (n - t0) / D)); paintSlide(t >= 1 ? 1 : easeOut(t)); if (t < 1) slideRaf = requestAnimationFrame(step); };
+    paintSlide(0); slideRaf = requestAnimationFrame(step);
+  }
   const RENDER = { home: renderHome, today: renderToday, progress: renderProgress, goals: renderGoals, read: renderRead };
   function go(v, { instant, fromRouter } = {}) {
     if (!VIEWS.includes(v)) v = 'home';
@@ -157,7 +165,7 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
     $$('.tab').forEach(t => t.removeAttribute('aria-current')); $(`.tab[data-nav="${v}"]`).setAttribute('aria-current', 'page');
     requestAnimationFrame(() => placeInd(instant));
     const prevEl = incoming, slide = changed && !instant && !motion.reduce && prevEl && !prevEl.hidden;
-    resetOut(); if (incoming) incoming.style.transform = '';
+    cancelAnimationFrame(slideRaf); resetOut(); if (incoming) incoming.style.transform = '';
     const scr = prevEl ? prevEl.getBoundingClientRect().top : 0;
     if (slide) slideDir = VIEWS.indexOf(v) > VIEWS.indexOf(prevEl.dataset.view) ? 1 : -1;
     $$('.view').forEach(s => s.hidden = s.dataset.view !== v && !(slide && s === prevEl));
@@ -166,8 +174,8 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
       RR.lenis ? RR.lenis.scrollTo(0, { immediate: true, force: true }) : window.scrollTo(0, 0);
       if (slide) { const main = $('.app-main'); outgoing = prevEl;
         Object.assign(outgoing.style, { position: 'absolute', left: '0', right: '0', top: (scr - main.getBoundingClientRect().top) + 'px' });
-        viewP.set(0); viewP.to(1, { response: .55, damping: 1 }); }
-      else viewP.set(1);
+        runSlide(); }
+      else { cancelAnimationFrame(slideRaf); paintSlide(1); }
     }
     if (!fromRouter) RR.pushPath(v === 'home' ? 'app' : 'app/' + v);
     document.title = (v === 'home' ? 'Home' : v[0].toUpperCase() + v.slice(1)) + ' · Re:Root';
@@ -181,7 +189,7 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
 
   /* ---------- HOME: overview, filtered by habit and time range ---------- */
   let homeHabit = 'all', homeRange = 30, clockT = 0;
-  const RANGES = [[1, '1 day'], [7, '7 days'], [30, '1 month'], [90, '3 months'], [180, '6 months'], [270, '9 months'], [365, '1 year'], ['all', 'All time']];
+  const RANGES = [[7, '7 days'], [30, '1 month'], [90, '3 months'], [180, '6 months'], [270, '9 months'], [365, '1 year'], ['all', 'All time']];
   const ord = n => n + (n % 100 > 10 && n % 100 < 14 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th');
   const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
   const rangeSeg = (act, cur) => `<div class="seg rng" role="group" aria-label="Time range"><span class="thumb" aria-hidden="true"></span>${RANGES.map(([v, l]) => `<button data-act="${act}" data-r="${v}" aria-pressed="${v === cur}">${l}</button>`).join('')}</div>`;
