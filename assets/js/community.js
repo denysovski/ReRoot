@@ -14,7 +14,7 @@
     let W = 0, H = 0, dpr = 1, rot = [20, -25], vel = .12, drag = null, raf = 0, t0 = performance.now(), world = null;
     const proj = d3.geoOrthographic().clipAngle(90).precision(.4), path = d3.geoPath(proj, ctx), grat = d3.geoGraticule10(), sphere = { type: 'Sphere' };
     const isLight = () => document.documentElement.dataset.theme === 'light' || (!document.documentElement.dataset.theme && matchMedia('(prefers-color-scheme: light)').matches);
-    const size = () => { dpr = Math.min(1.5, devicePixelRatio || 1); const w = cv.clientWidth, h = cv.clientHeight; if (w === W && h === H) return; W = w; H = h; cv.width = W * dpr; cv.height = H * dpr; };
+    const size = () => { dpr = 1.5; const w = cv.clientWidth, h = cv.clientHeight; if (w === W && h === H) return; W = w; H = h; cv.width = W * dpr; cv.height = H * dpr; };
     const ro = new ResizeObserver(size); ro.observe(cv); size();
     loadWorld().then(w => world = w).catch(() => {});
     let visible = true; const io = new IntersectionObserver(es => visible = es[0].isIntersecting); io.observe(cv);
@@ -47,6 +47,30 @@
         ctx.drawImage(img, pt[0] - sz / 2, pt[1] - sz / 2, sz, sz);
       }
       ctx.globalAlpha = 1;
+      // pins with labels for the eight countries in the table
+      if (world) {
+        if (!world.pins) { const want = { 'United States of America': 'United States', Germany: 'Germany', 'United Kingdom': 'United Kingdom', Australia: 'Australia', Canada: 'Canada', France: 'France', Czechia: 'Czechia', Poland: 'Poland' },
+          fix = { 'United States of America': [-98, 39], Canada: [-100, 57], France: [2.4, 46.6] };
+          world.pins = world.land.features.filter(f => want[f.properties.name]).map(f => ({ name: want[f.properties.name], at: fix[f.properties.name] || d3.geoCentroid(f) })); }
+        const center = [-rot[0], -rot[1]];
+        ctx.font = '600 12px Geist, system-ui, sans-serif'; ctx.textBaseline = 'middle';
+        // place each label above its pin; if it would overlap one already placed, try higher or to the side
+        const placed = [];
+        world.pins.forEach(pn => {
+          if (d3.geoDistance(pn.at, center) > 1.35) return; const pt = proj(pn.at); if (!pt) return;
+          const w = ctx.measureText(pn.name).width + 20, h = 26; let box = null;
+          for (const lift of [30, 60, 90, 120, 150]) { for (const dx of [0, -(w / 2 + 8), w / 2 + 8, -(w + 10), w + 10]) {
+            const b = { x: pt[0] - w / 2 + dx, y: pt[1] - lift - h, w, h };
+            if (!placed.some(o => b.x < o.x + o.w + 6 && b.x + b.w + 6 > o.x && b.y < o.y + o.h + 4 && b.y + b.h + 4 > o.y)) { box = b; break; } } if (box) break; }
+          if (!box) box = { x: pt[0] - w / 2, y: pt[1] - 180 - h, w, h };
+          placed.push(box); box.pt = pt; box.name = pn.name;
+        });
+        ctx.strokeStyle = L ? 'rgba(80,50,255,.8)' : 'rgba(190,170,255,.85)'; ctx.lineWidth = 1.2;
+        placed.forEach(b => { const ax = clamp(b.pt[0], b.x + 12, b.x + b.w - 12); ctx.beginPath(); ctx.moveTo(b.pt[0], b.pt[1]); ctx.lineTo(ax, b.y + b.h); ctx.stroke(); });
+        placed.forEach(b => { ctx.fillStyle = '#7c5cff'; ctx.beginPath(); ctx.arc(b.pt[0], b.pt[1], 4.5, 0, 7); ctx.fill(); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(b.pt[0], b.pt[1], 1.8, 0, 7); ctx.fill(); });
+        placed.forEach(b => { ctx.fillStyle = L ? 'rgba(15,15,18,.92)' : 'rgba(255,255,255,.94)'; ctx.beginPath(); ctx.roundRect(b.x, b.y, b.w, b.h, 13); ctx.fill();
+          ctx.fillStyle = L ? '#fff' : '#0b0b0c'; ctx.fillText(b.name, b.x + 10, b.y + 13.5); });
+      }
     };
     raf = requestAnimationFrame(draw);
     cv.addEventListener('pointerdown', e => { e.preventDefault(); drag = { x: e.clientX, y: e.clientY, r: rot.slice() }; cv.classList.add('grab'); }, { signal });

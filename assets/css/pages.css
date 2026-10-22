@@ -1443,3 +1443,13 @@ a.logo-pill:hover{transform:scale(1.04)}
 .swap-sticky{position:relative;height:auto;min-height:calc(100vh - 100px);min-height:calc(100svh - 100px);padding-block:40px 60px}
 .swap + .steps{margin-top:0}
 .sw-q{opacity:1}
+
+/* ---------- articles: light orbit around Read more ---------- */
+#art-grid .read-more{position:relative;isolation:isolate;overflow:visible;transition:box-shadow .4s,background-color .3s}
+#art-grid .read-more::before{content:"";position:absolute;inset:-4px;border-radius:inherit;padding:2.5px;pointer-events:none;
+  background:conic-gradient(from var(--ang),transparent 0deg,transparent 250deg,color-mix(in srgb,var(--fg) 90%,transparent) 330deg,transparent 360deg);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);
+  filter:drop-shadow(0 0 6px var(--fg)) drop-shadow(0 0 2px var(--fg));opacity:0;transition:opacity .3s}
+@keyframes rmOrbit{to{--ang:360deg}}
+#art-grid .gcard:hover .read-more::before,#art-grid .read-more:hover::before,#art-grid .read-more:focus-visible::before{opacity:1;animation:rmOrbit 1.6s linear infinite}
+#art-grid .gcard:hover .read-more{box-shadow:var(--btn-ring),0 0 26px 3px color-mix(in srgb,var(--fg) 28%,transparent)}

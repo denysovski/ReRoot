@@ -84,6 +84,7 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
   $('#m-reset-yes').addEventListener('click', () => { S = RRStore.blank(); save(); for (const k in prevRing) delete prevRing[k]; $('#m-reset-confirm').hidden = true; $('#m-reset').hidden = false; acct.hide(); RENDER[view](); toast('All check-ins deleted'); });
   $('#m-logout').addEventListener('click', () => { auth.logout(); RR.navigate(''); });
   paintAcct();
+  $$('.mtoggle').forEach(t => t.addEventListener('click', () => { const sub = $('#' + t.dataset.mt), on = !sub.classList.contains('open'); sub.classList.toggle('open', on); t.setAttribute('aria-expanded', on); }));
 
   /* ---------- reminder while the app is open (simulated scheduling) ---------- */
   let remT = 0;
@@ -127,101 +128,85 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
   const emptyState = () => `<div class="glass empty"><h3>What do you want to quit?</h3><p>Add a habit like nail biting, late-night scrolling or anything else you want to stop. Then check in once a day.</p><div class="actions-row"><button class="btn btn-primary" data-press data-act="add">Add your first habit</button><a class="btn-text" href="how-it-works">How Re:Root works</a></div></div>`;
   const greet = () => { const h = now().getHours(); return h < 5 ? 'Still up' : h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'; };
 
-  /* ---------- HOME: an overview of how you're doing ---------- */
+  /* ---------- HOME: overview, filtered by habit and time range ---------- */
+  let homeHabit = 'all', homeRange = 30;
+  const RANGES = [[1, '1 day'], [7, '7 days'], [30, '1 month'], [90, '3 months'], [180, '6 months'], [270, '9 months'], [365, '1 year'], ['all', 'All time']];
   function renderHome() {
-    const r = $('#home-root'), tk = todayKey(), H = S.habits;
+    const r = $('#home-root'), tk = todayKey(), ALL = S.habits;
     const head = `<header class="vhead"><p class="eyebrow">${fmt(now(), { weekday: 'long', month: 'long', day: 'numeric' })} · ${now().toTimeString().slice(0, 5)}</p><h1 class="vtitle">${greet()}, ${esc(user.name)}.</h1></header>${exampleBanner()}`;
-    if (!H.length) { r.innerHTML = head + emptyState() + inviteCard(); return; }
+    if (!ALL.length) { r.innerHTML = head + emptyState(); return; }
+    if (homeHabit !== 'all' && !ALL.find(h => h.id === homeHabit)) homeHabit = 'all';
+    const H = homeHabit === 'all' ? ALL : ALL.filter(h => h.id === homeHabit);
     let best = null, bn = -1; H.forEach(h => { const n = currentStreak(h); if (n > bn) { bn = n; best = h; } });
-    const done = H.filter(h => (getLog(h.id, tk) || {}).s).length;
-    const strip = Array.from({ length: 30 }, (_, i) => { const l = getLog(best.id, key(addDays(now(), i - 29))); return `<i class="${l && l.s ? l.s : ''}"></i>`; }).join('');
-    // last 30 days across all habits
-    const days = Array.from({ length: 30 }, (_, i) => { const k = key(addDays(now(), i - 29)); let c = 0, x = 0, n = 0;
-      H.forEach(h => { if (k < h.start) return; n++; const l = getLog(h.id, k); if (l && l.s === 'c') c++; else if (l && l.s === 'x') x++; }); return { k, c, x, n }; });
-    const clean30 = days.reduce((a, d) => a + d.c, 0), slips30 = days.reduce((a, d) => a + d.x, 0), logged = clean30 + slips30;
-    const rate30 = logged ? Math.round(clean30 / logged * 100) : 0;
-    let cleanAll = 0, daysAll = 0; H.forEach(h => { for (let d = fromKey(h.start); key(d) <= tk; d = addDays(d, 1)) { const l = getLog(h.id, key(d)); if (key(d) < tk || (l && l.s)) daysAll++; if (l && l.s === 'c') cleanAll++; } });
-    // slips by weekday, last 12 weeks
-    const wd = [0, 0, 0, 0, 0, 0, 0], WD = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    for (let i = 0; i < 84; i++) { const d = addDays(now(), -i), k = key(d); H.forEach(h => { const l = getLog(h.id, k); if (l && l.s === 'x') wd[(d.getDay() + 6) % 7]++; }); }
+    const earliest = H.reduce((m, h) => h.start < m ? h.start : m, tk);
+    const n = homeRange === 'all' ? Math.max(1, Math.round((fromKey(tk) - fromKey(earliest)) / 864e5) + 1) : homeRange;
+    const days = Array.from({ length: n }, (_, i) => { const d = addDays(now(), i - (n - 1)), k = key(d); let c = 0, x = 0, m = 0;
+      H.forEach(h => { if (k < h.start) return; m++; const l = getLog(h.id, k); if (l && l.s === 'c') c++; else if (l && l.s === 'x') x++; }); return { d, k, c, x, m }; });
+    const clean = days.reduce((a, d) => a + d.c, 0), slips = days.reduce((a, d) => a + d.x, 0), possible = days.reduce((a, d) => a + (d.k < tk ? d.m : (d.c + d.x)), 0);
+    const rt = clean + slips ? Math.round(clean / (clean + slips) * 100) : 0;
+    const wd = [0, 0, 0, 0, 0, 0, 0], WD = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']; days.forEach(o => { wd[(o.d.getDay() + 6) % 7] += o.x; });
     const wmax = Math.max(1, ...wd), hard = wd.indexOf(Math.max(...wd));
-    // habits split into going well / still working on
-    const rows = H.map(h => { const cur = currentStreak(h), rt = rate(h, 30); let slip7 = false; for (let i = 0; i < 7; i++) { const l = getLog(h.id, key(addDays(now(), -i))); if (l && l.s === 'x') slip7 = true; }
-      return { h, cur, rt, good: rt >= 80 && !slip7 }; });
-    const hrow = o => `<div class="hrow"><div class="hr-top"><b>${esc(o.h.name)}</b><span class="num">${o.cur} / ${o.h.goal} days</span></div><div class="hbar"><i style="--w:${Math.min(100, o.cur / o.h.goal * 100)}%"></i></div><small>${o.rt}% clean in the last 30 days</small></div>`;
-    const good = rows.filter(o => o.good), work = rows.filter(o => !o.good);
-    // bar chart: share of habits kept clean each day
-    const W = 300, Hh = 110, bw = W / 30;
-    const bars = days.map((d, i) => { const f = d.n ? d.c / d.n : 0, hgt = Math.max(2, f * (Hh - 10));
-      return `<rect class="anim-bar ${d.x ? 'sl' : ''}" x="${i * bw + 1.5}" y="${Hh - hgt}" width="${bw - 3}" height="${hgt}" rx="2"/>`; }).join('');
+    // bars: up to 60, longer ranges are grouped
+    const size = Math.ceil(n / 60), groups = []; for (let i = 0; i < n; i += size) { const g = days.slice(i, i + size); groups.push({ c: g.reduce((a, o) => a + o.c, 0), m: g.reduce((a, o) => a + o.m, 0), x: g.reduce((a, o) => a + o.x, 0) }); }
+    const W = 300, Hh = 110, bw = W / Math.max(groups.length, 1);
+    const bars = groups.map((g, i) => { const f = g.m ? g.c / g.m : 0, hgt = Math.max(2, f * (Hh - 10)); return `<rect class="anim-bar ${g.x ? 'sl' : ''}" x="${i * bw + Math.min(1.5, bw * .15)}" y="${Hh - hgt}" width="${Math.max(1, bw - Math.min(3, bw * .3))}" height="${hgt}" rx="2"/>`; }).join('');
     const wbars = wd.map((v, i) => `<div class="wdb ${i === hard && v ? 'hard' : ''}"><i class="anim-wd" style="--h:${v / wmax * 100}%"></i><span>${WD[i]}</span></div>`).join('');
-    const A = window.RR_ARTICLES, tip = A[now().getDate() % A.length];
+    const rl = RANGES.find(x => x[0] === homeRange)[1].toLowerCase(), strip = Array.from({ length: 30 }, (_, i) => { const l = getLog(best.id, key(addDays(now(), i - 29))); return `<i class="${l && l.s ? l.s : ''}"></i>`; }).join('');
+    const done = ALL.filter(h => (getLog(h.id, tk) || {}).s).length;
     r.innerHTML = head + `
-      <div class="dash">
-        <section class="glass dash-hero"><span class="goal-pill">Goal ${best.goal} days</span><div><p class="eyebrow">Longest current run</p><div class="big-n" style="margin-top:14px"><b id="home-n">0</b><span>days</span></div><p class="hero-from">clean from ${esc(best.name.toLowerCase())}</p></div>
-          <div style="display:grid;gap:14px"><div class="strip" aria-label="Last 30 days">${strip}</div>
-          <div class="actions-row"><button class="btn btn-primary" data-press data-nav="today">${done === H.length ? 'Review today' : 'Check in for today'}</button><button class="btn-text" data-nav="progress">See your progress</button></div></div></section>
-        <div class="dash-side">
-          <section class="glass card"><div class="chart-h"><h3>Today</h3><small>${done} of ${H.length} checked in</small></div><div class="status-list">${H.map(h => { const l = getLog(h.id, tk) || {}; return `<div class="status"><span>${esc(h.name)}</span><em class="${l.s === 'c' ? 'c' : ''}">${l.s === 'c' ? 'Clean' : l.s === 'x' ? 'Slipped' : 'Not yet'}</em></div>`; }).join('')}</div></section>
-          ${inviteCard()}
-        </div></div>
-      <div class="stats" style="margin-top:14px">
-        <div class="glass card stat"><b data-count="${H.length}">0</b><span>Habits you're quitting</span></div>
-        <div class="glass card stat"><b><span data-count="${cleanAll}">0</span><small> / ${daysAll}</small></b><span>Clean days since you started (all habits)</span></div>
-        <div class="glass card stat"><b><span data-count="${rate30}">0</span>%</b><span>Clean rate, last 30 days</span></div>
-        <div class="glass card stat"><b data-count="${slips30}">0</b><span>Slips, last 30 days</span></div></div>
-      <div class="charts">
-        <section class="glass card chart"><div class="chart-h"><h3>Every day, all habits</h3><small>share of habits kept clean, last 30 days</small></div>
-          <svg class="dash-bars" viewBox="0 0 ${W} ${Hh}" preserveAspectRatio="none" role="img" aria-label="Daily clean share, last 30 days">${bars}</svg>
-          <div class="legend"><span><i class="c"></i>Clean share</span><span><i class="sl"></i>Day with a slip</span></div></section>
-        <section class="glass card chart"><div class="chart-h"><h3>When slips happen</h3><small>last 12 weeks</small></div>
-          <div class="wdbars">${wbars}</div><p class="vsub" style="margin-top:12px">${Math.max(...wd) ? `Your hardest day is <b>${['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][hard]}</b>. Plan something for it.` : 'No slips logged in the last 12 weeks.'}</p></section>
-        <section class="glass card span2"><div class="hcols">
-          <div><div class="chart-h"><h3>Going well</h3><small>${good.length} habit${good.length === 1 ? '' : 's'} · 80%+ clean, no slip this week</small></div>${good.length ? good.map(hrow).join('') : '<p class="vsub">Nothing here yet. Keep checking in and habits move here.</p>'}</div>
-          <div><div class="chart-h"><h3>Still working on</h3><small>${work.length} habit${work.length === 1 ? '' : 's'}</small></div>${work.length ? work.map(hrow).join('') : '<p class="vsub">Every habit is on track. Nice.</p>'}</div>
-        </div></section>
+      <div class="hfilters">
+        <div class="chips" role="group" aria-label="Habit"><button class="chip" data-press data-act="hpick" data-h="all" aria-pressed="${homeHabit === 'all'}">All habits</button>${ALL.map(h => `<button class="chip" data-press data-act="hpick" data-h="${h.id}" aria-pressed="${homeHabit === h.id}">${esc(h.name)}</button>`).join('')}</div>
+        <div class="seg rng" role="group" aria-label="Time range">${RANGES.map(([v, l]) => `<button data-act="hrange" data-r="${v}" aria-pressed="${v === homeRange}">${l}</button>`).join('')}</div>
       </div>
-      <div class="dash-links">
-        <button class="glass card link-card" data-act="article" data-a="${tip.id}" style="text-align:left"><span class="eyebrow">Today's read · ${tip.min} min</span><h3>${esc(tip.t)}</h3><p>${esc(tip.d)}</p></button>
-        <a class="glass card link-card" href="community"><span class="eyebrow">Community</span><h3>You are not doing this alone</h3><p>See how many people around the world are quitting the same habits.</p></a>
+      <div class="dash">
+        <section class="glass dash-hero"><span class="goal-pill">Goal ${best.goal} days</span><div><p class="eyebrow">${homeHabit === 'all' ? 'Longest current run' : 'Current run'}</p><div class="big-n" style="margin-top:14px"><b id="home-n">0</b><span>days</span></div><p class="hero-from">clean from ${esc(best.name.toLowerCase())}</p></div>
+          <div class="hero-bottom"><div class="strip" aria-label="Last 30 days">${strip}</div>
+          <div class="actions-row"><button class="btn btn-primary" data-press data-nav="today">${done === ALL.length ? 'Review today' : 'Check in for today'}</button><button class="btn-text" data-act="toprog" data-h="${best.id}">See your progress</button></div></div></section>
+        <section class="glass card"><div class="chart-h"><h3>Today</h3><small>${done} of ${ALL.length} checked in</small></div><div class="status-list">${ALL.map(h => { const l = getLog(h.id, tk) || {};
+          return `<div class="status"><span>${esc(h.name)}</span>${l.s ? `<em class="${l.s === 'c' ? 'c' : ''}">${l.s === 'c' ? 'Clean' : 'Slipped'}</em>` : `<button class="btn btn-primary btn-sm" data-press data-nav="today">Check in</button>`}</div>`; }).join('')}</div></section>
+      </div>
+      <div class="stats" style="margin-top:14px">
+        <div class="glass card stat"><b data-count="${ALL.length}">0</b><span>Habits you're quitting</span></div>
+        <div class="glass card stat"><b><span data-count="${clean}">0</span><small> / ${possible}</small></b><span>Clean days, ${rl}</span></div>
+        <div class="glass card stat"><b><span data-count="${rt}">0</span>%</b><span>Clean rate, ${rl}</span></div>
+        <div class="glass card stat"><b data-count="${slips}">0</b><span>Slips, ${rl}</span></div></div>
+      <div class="charts">
+        <section class="glass card chart"><div class="chart-h"><h3>${homeHabit === 'all' ? 'Every day, all habits' : 'Every day'}</h3><small>share kept clean, ${rl}${size > 1 ? ` · ${size} days per bar` : ''}</small></div>
+          <svg class="dash-bars" viewBox="0 0 ${W} ${Hh}" preserveAspectRatio="none" role="img" aria-label="Daily clean share">${bars}</svg>
+          <div class="legend"><span><i class="c"></i>Clean share</span><span><i class="sl"></i>With a slip</span></div></section>
+        <section class="glass card chart"><div class="chart-h"><h3>When slips happen</h3><small>${rl}</small></div>
+          <div class="wdbars">${wbars}</div><p class="vsub" style="margin-top:12px">${Math.max(...wd) ? `Your hardest day is <b>${['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][hard]}</b>. Plan something for it.` : 'No slips in this period.'}</p></section>
       </div>`;
     const hn = $('#home-n'); hn && countUp(hn, bn);
     $$('[data-count]', r).forEach(el => countUp(el, +el.dataset.count));
-    const bs = $$('.anim-bar', r), ws = $$('.anim-wd', r), hb = $$('.hbar i', r);
-    new Spring(0, { eps: .0005 }).on(p => {
-      bs.forEach((b, i) => b.style.transform = `scaleY(${clamp(p * 1.6 - i / bs.length * .6)})`);
-      ws.forEach(w => w.style.transform = `scaleY(${p})`); hb.forEach(b => b.style.transform = `scaleX(${p})`);
-    }).to(1, { response: 1, damping: 1 });
-  }
-  function inviteCard() {
-    return `<section class="glass card invite"><span class="inv-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.7-3.6 3.3-5.5 6.5-5.5s5.8 1.9 6.5 5.5"/><path d="M18.5 8v6M15.5 11h6"/></svg></span>
-      <div><h3>Invite a friend</h3><p>Quitting is easier with someone on your side. Send them a link to Re:Root.</p></div>
-      <button class="btn btn-primary btn-sm" data-press data-act="invite">Copy invite link</button></section>`;
+    const bs = $$('.anim-bar', r), ws = $$('.anim-wd', r);
+    new Spring(0, { eps: .0005 }).on(p => { bs.forEach((b, i) => b.style.transform = `scaleY(${clamp(p * 1.6 - i / bs.length * .6)})`); ws.forEach(w => w.style.transform = `scaleY(${clamp(p)})`); }).to(1, { response: 1, damping: 1 });
   }
 
   /* ---------- TODAY ---------- */
   function habitCard(h) {
     const tk = todayKey(), l = getLog(h.id, tk) || {}, n = currentStreak(h), nm = nextMile(n);
     const week = Array.from({ length: 7 }, (_, i) => addDays(now(), i - 6)).map(d => { const k = key(d), g = getLog(h.id, k), cls = g && g.s ? g.s : '', before = k < h.start;
-      return `<div class="wd"><button class="dot ${cls} ${k === tk ? 'today' : ''}" data-press data-act="cycle" data-h="${h.id}" data-k="${k}" ${before ? 'disabled style="opacity:.3"' : ''} aria-label="${fmt(d, { weekday: 'long', month: 'short', day: 'numeric' })}: ${cls === 'c' ? 'clean' : cls === 'x' ? 'slipped' : 'not logged'}"></button>${fmt(d, { weekday: 'narrow' })}</div>`; }).join('');
+      return `<div class="wd"><button class="dot ${cls} ${k === tk ? 'today' : ''} ${dayPop && dayPop.h === h.id && dayPop.k === k ? 'sel' : ''}" data-press data-act="daypick" data-h="${h.id}" data-k="${k}" ${before ? 'disabled style="opacity:.3"' : ''} aria-label="${fmt(d, { weekday: 'long', month: 'short', day: 'numeric' })}: ${cls === 'c' ? 'clean' : cls === 'x' ? 'slipped' : 'not logged'}"></button>${fmt(d, { weekday: 'narrow' })}</div>`; }).join('');
     return `<article class="glass card hc">
-      <div class="hc-top"><div style="min-width:0"><button class="hc-name" data-act="detail" data-h="${h.id}" title="Open details">${esc(h.name)}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button><div class="hc-meta">${n} of ${h.goal} days${nm ? ` · next milestone ${nm}` : ''}</div></div>${ringSVG(h.id, clamp(n / h.goal), n)}</div>
+      <div class="hc-top"><div style="min-width:0"><button class="hc-name" data-act="toprog" data-h="${h.id}" title="Open progress">${esc(h.name)}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button><div class="hc-meta">${n} of ${h.goal} days${nm ? ` · next milestone ${nm}` : ''}</div></div>${ringSVG(h.id, clamp(n / h.goal), n)}</div>
       <div class="week">${week}</div>
+      ${dayPop && dayPop.h === h.id ? (() => { const g = getLog(h.id, dayPop.k) || {}; return `<div class="daypop"><span>${fmt(fromKey(dayPop.k), { weekday: 'long', month: 'short', day: 'numeric' })}</span><div class="dp-btns"><button data-act="setday" data-h="${h.id}" data-k="${dayPop.k}" data-s="c" aria-pressed="${g.s === 'c'}">Stayed clean</button><button data-act="setday" data-h="${h.id}" data-k="${dayPop.k}" data-s="x" aria-pressed="${g.s === 'x'}">Slipped</button><button data-act="setday" data-h="${h.id}" data-k="${dayPop.k}" data-s="" class="dp-clear">Clear</button></div></div>`; })() : ''}
       <div class="choice"><button data-press data-act="clean" data-h="${h.id}" aria-pressed="${l.s === 'c'}">Stayed clean</button><button data-press data-act="slip" data-h="${h.id}" aria-pressed="${l.s === 'x'}">Slipped</button></div>
       <div class="urge"><div class="urge-lab"><span>Urge strength today</span><span>0 none · 5 intense</span></div><div class="seg" role="group" aria-label="Urge strength">${[0, 1, 2, 3, 4, 5].map(u => `<button data-press data-act="urge" data-h="${h.id}" data-u="${u}" aria-pressed="${l.u === u}">${u}</button>`).join('')}</div></div>
       <div class="slipwrap ${l.s === 'x' && slipAnim !== h.id ? 'open' : ''}" data-slip="${h.id}"><div><p class="slipnote">A slip is information, not a verdict. Your earlier clean days still count. <button data-act="article" data-a="slip">What to do next</button></p></div></div>
     </article>`;
   }
-  let slipAnim = null;
+  let slipAnim = null, dayPop = null, justKey = null;
   function renderToday() {
     const r = $('#today-root'), tk = todayKey(), done = S.habits.filter(h => (getLog(h.id, tk) || {}).s).length;
-    const remind = !user.prefs.notif ? `<div class="glass reminder-bar"><span class="muted">Want a daily nudge to check in?</span><button class="btn btn-primary btn-sm" data-press data-act="enable-notif">Yes, remind me</button></div>` : '';
     r.innerHTML = `<header class="vhead"><p class="eyebrow">${fmt(now(), { weekday: 'long', month: 'long', day: 'numeric' })}</p><h1 class="vtitle">Today</h1>
-      <p class="vsub">${S.habits.length ? `${done} of ${S.habits.length} checked in. Tap a day in the week row to fix a missed check-in.` : 'Nothing tracked yet.'}</p></header>
-      ${exampleBanner()}${S.habits.length ? remind : ''}
+      <p class="vsub">${S.habits.length ? `<span class="ci-pill ${done === S.habits.length ? 'all' : ''}"><b>${done}</b> of ${S.habits.length} checked in</span> Tap a day in the week row to log the last 7 days.` : 'Nothing tracked yet.'}</p></header>
+      ${exampleBanner()}
       ${S.habits.length ? `<div class="cards">${S.habits.map(habitCard).join('')}<button class="addcard" data-press data-act="add">+ Add a habit</button></div>
       <section class="glass card note"><label for="note-today" style="font-weight:600">What helped today?</label><textarea id="note-today" placeholder="A walk after dinner, texting a friend, leaving the phone in the kitchen…">${esc(S.notes[tk] || '')}</textarea><small>Saved automatically in this browser.</small></section>` : emptyState()}`;
     animateRings(r);
+    if (justKey) { const el = $(justKey, r); justKey = null; el && el.classList.add('just'); }
     if (slipAnim) { const w = $(`[data-slip="${slipAnim}"]`, r); slipAnim = null; w && requestAnimationFrame(() => requestAnimationFrame(() => w.classList.add('open'))); }
     const ta = $('#note-today'); ta && ta.addEventListener('input', () => { S.notes[tk] = ta.value; save(); });
   }
@@ -282,23 +267,27 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
       cells.forEach((c, i) => c.style.opacity = (+c.dataset.o || 1) * clamp(p * 1.8 - i / cells.length * .8));
     }).to(1, { response: 1.1, damping: 1 });
   }
+  let progRange = 30;
   function renderProgress() {
     const r = $('#progress-root');
     if (!S.habits.length) { r.innerHTML = `<header class="vhead"><h1 class="vtitle">Progress</h1></header>${emptyState()}`; return; }
     if (!S.habits.find(h => h.id === S.sel)) S.sel = S.habits[0].id;
-    const h = S.habits.find(x => x.id === S.sel), cur = currentStreak(h), lng = longest(h), rt = rate(h, 30), au = avgUrge(h, 14);
-    r.innerHTML = `<header class="vhead"><p class="eyebrow">Last 30 days</p><h1 class="vtitle">Progress</h1></header>
+    const h = S.habits.find(x => x.id === S.sel), cur = currentStreak(h), lng = longest(h), PR = progRange, rt = rate(h, PR), au = avgUrge(h, Math.min(PR, 14));
+    const slipsList = []; for (let i = 0; i < PR; i++) { const d = addDays(now(), -i), k = key(d); if (k < h.start) break; const l = getLog(h.id, k); if (l && l.s === 'x') slipsList.push({ d, u: l.u }); }
+    r.innerHTML = `<header class="vhead"><p class="eyebrow">Last ${PR} days</p><h1 class="vtitle">Progress</h1></header>
       <div class="chips" role="group" aria-label="Habit">${S.habits.map(x => `<button class="chip" data-press data-act="pick" data-h="${x.id}" aria-pressed="${x.id === h.id}">${esc(x.name)}</button>`).join('')}</div>
+      <div class="seg rng" role="group" aria-label="Range" style="margin-bottom:14px">${[[30, '30 days'], [90, '90 days'], [365, '365 days']].map(([v, l]) => `<button data-act="prange" data-r="${v}" aria-pressed="${v === PR}">${l}</button>`).join('')}</div>
       <div class="stats">
         <div class="glass card stat"><b data-count="${cur}">0</b><span>Current streak, days</span></div>
         <div class="glass card stat"><b data-count="${lng}">0</b><span>Longest streak, days</span></div>
-        <div class="glass card stat"><b><span data-count="${rt}">0</span>%</b><span>Clean days, last 30 days</span></div>
+        <div class="glass card stat"><b><span data-count="${rt}">0</span>%</b><span>Clean days, last ${PR} days</span></div>
         <div class="glass card stat has-tip" data-tip="Your average urge strength over the last 14 days. 0 means no urge at all, 5 is the strongest urge."><b>${au == null ? '–' : au.toFixed(1)}</b><span>Average urge, 0–5, last 14 days</span></div></div>
       <div class="charts">
-        <section class="glass card chart"><div class="chart-h"><h3>Streak length</h3><small>days in a row, as of each day</small></div>${lineChart(h)}</section>
+        <section class="glass card chart"><div class="chart-h"><h3>Streak length</h3><small>days in a row, as of each day</small></div>${lineChart(h, PR)}</section>
         <section class="glass card chart"><div class="chart-h"><h3>Urge strength</h3><small>last 14 days</small></div>${urgeChart(h)}<div class="legend"><span>Darker bar: slipped that day</span></div></section>
         <section class="glass card chart span2"><div class="chart-h"><h3>${now().getFullYear()}</h3><small>every day of the year, Monday to Sunday</small></div><div class="year-wrap">${heatmap(h)}</div>${yearLegend()}</section></div>
-      <div style="margin-top:14px"><button class="btn btn-primary" data-press data-act="detail" data-h="${h.id}">Open ${esc(h.name)} in detail</button></div>`;
+      <section class="glass card" style="margin-top:14px"><div class="chart-h"><h3>Days you slipped</h3><small>${slipsList.length} in the last ${PR} days</small></div>
+        ${slipsList.length ? `<table class="slips"><thead><tr><th>Date</th><th>Weekday</th><th>Urge</th></tr></thead><tbody>${slipsList.map(o => `<tr><td>${fmt(o.d, { month: 'short', day: 'numeric', year: 'numeric' })}</td><td>${fmt(o.d, { weekday: 'long' })}</td><td>${o.u == null ? '–' : o.u + ' / 5'}</td></tr>`).join('')}</tbody></table>` : '<p class="vsub">No slips in this period. Keep going.</p>'}</section>`;
     $$('[data-count]', r).forEach(el => countUp(el, +el.dataset.count));
     animCharts(r);
   }
@@ -337,7 +326,7 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
       return `<article class="glass card gc">
         <div class="gear-wrap"><button class="gear" data-act="gear" aria-label="Settings for ${esc(h.name)}" aria-haspopup="menu">${GEAR}</button>
           <div class="gmenu" role="menu">
-            <button class="mi" data-act="detail" data-h="${h.id}" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>View details</button>
+            <button class="mi" data-act="toprog" data-h="${h.id}" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>View details</button>
             <button class="mi" data-act="edit" data-h="${h.id}" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit habit and goal</button>
             <button class="mi" data-act="share" data-h="${h.id}" role="menuitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>Share progress</button>
             <hr>${confirmDel === h.id ? `<div class="gconfirm"><span>Delete ${esc(h.name)} and every check-in? This can't be undone.</span><button class="btn btn-primary btn-sm" data-press data-act="del-yes" data-h="${h.id}">Delete forever</button><button class="btn-text" data-act="del-no">Keep it</button></div>`
@@ -476,12 +465,17 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
     const a = b.dataset.act, id = b.dataset.h, tk = todayKey();
     switch (a) {
       case 'clean': case 'slip': { const s = a === 'clean' ? 'c' : 'x', cur = getLog(id, tk) || {}, next = cur.s === s ? undefined : s; setLog(id, tk, { s: next }); buzz();
-        if (next === 'x') slipAnim = id;
+        if (next === 'x') slipAnim = id; if (next) justKey = `.choice [data-act="${a}"][data-h="${id}"]`;
         const w = $(`[data-slip="${id}"].open`);
         if (cur.s === 'x' && next !== 'x' && w && !motion.reduce) { w.classList.remove('open'); $$(`.choice [data-h="${id}"]`).forEach(x => x.setAttribute('aria-pressed', x.dataset.act === 'clean' && next === 'c')); setTimeout(renderToday, 420); }
         else renderToday();
         if (s === 'c' && cur.s !== 'c') toast('Logged. One more clean day.'); break; }
-      case 'urge': { const u = +b.dataset.u, cur = getLog(id, tk) || {}; setLog(id, tk, { u: cur.u === u ? undefined : u }); renderToday(); break; }
+      case 'urge': { const u = +b.dataset.u, cur = getLog(id, tk) || {}; setLog(id, tk, { u: cur.u === u ? undefined : u }); if (cur.u !== u) justKey = `.seg [data-h="${id}"][data-u="${u}"]`; renderToday(); break; }
+      case 'daypick': { const k = b.dataset.k; dayPop = dayPop && dayPop.h === id && dayPop.k === k ? null : { h: id, k }; renderToday(); break; }
+      case 'setday': { const k = b.dataset.k, sv = b.dataset.s; setLog(id, k, { s: sv || undefined }); buzz(); dayPop = null; renderToday(); if (sv === 'c') toast('Logged as clean'); break; }
+      case 'toprog': S.sel = id; save(); gearOpen = null; $$('.gear-wrap.open').forEach(w => w.classList.remove('open')); go('progress'); break;
+      case 'hpick': homeHabit = id; renderHome(); break;
+      case 'hrange': homeRange = b.dataset.r === 'all' ? 'all' : +b.dataset.r; renderHome(); break;
       case 'cycle': { const k = b.dataset.k, cur = (getLog(id, k) || {}).s; setLog(id, k, { s: cur === 'c' ? 'x' : cur === 'x' ? undefined : 'c' }); buzz(); renderToday(); break; }
       case 'add': newGoal = 30; editId = null; openSheet('New habit', habitForm()); break;
       case 'edit': { const h = S.habits.find(x => x.id === id); gearOpen = null; $$('.gear-wrap.open').forEach(w => w.classList.remove('open')); newGoal = h.goal; editId = id; openSheet(`Edit ${h.name}`, habitForm(h)); break; }
@@ -494,6 +488,7 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
       case 'pick-goal': newGoal = +b.dataset.g; $$('#goal-row .chip').forEach(c => c.setAttribute('aria-pressed', +c.dataset.g === newGoal)); break;
       case 'close-sheet': closeSheet(); break;
       case 'pick': S.sel = id; save(); renderProgress(); break;
+      case 'prange': progRange = +b.dataset.r; renderProgress(); break;
       case 'del': confirmDel = id; renderGoals(); break;
       case 'del-no': confirmDel = null; renderGoals(); break;
       case 'del-yes': S.habits = S.habits.filter(h => h.id !== id); for (const k in S.logs) delete S.logs[k][id]; confirmDel = null; gearOpen = null; save(); renderGoals(); toast('Habit deleted forever'); break;
