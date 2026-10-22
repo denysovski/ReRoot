@@ -113,6 +113,22 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
     user = auth.update({ prefs: { notif: on } }); paintAcct(); scheduleReminder(); toast(on ? 'Daily reminder on' : 'Daily reminder off');
   });
   $('#m-time').addEventListener('change', e => { user = auth.update({ prefs: { reminder: e.target.value || '20:00' } }); scheduleReminder(); toast(`Reminder set for ${e.target.value}`); });
+  // test data: keeps your habits (or adds three) and fills months of random history before today
+  $('#m-random').addEventListener('click', () => {
+    if (!S.habits.length) [['Nail biting', 90], ['Phone in bed', 30], ['Sugar', 60]].forEach(([name, goal]) => S.habits.push({ id: RRStore.uid(), name, goal, start: todayKey() }));
+    S.habits.forEach(h => {
+      const back = 180 + Math.floor(Math.random() * 240), streak = 3 + Math.floor(Math.random() * 40), p = .18 + Math.random() * .25;
+      for (const k in S.logs) delete S.logs[k][h.id];
+      for (let i = back; i >= 1; i--) {
+        const k = key(addDays(now(), -i)); if (Math.random() < .04 && i > streak) continue;
+        const s = i <= streak ? 'c' : i === streak + 1 ? 'x' : Math.random() < p * Math.min(1, i / back + .25) ? 'x' : 'c';
+        const u = s === 'x' ? 3 + Math.round(Math.random() * 2) : Math.max(0, Math.round(Math.random() * 3 * (i / back) + Math.random() * 1.4 - (i <= streak ? .5 : 0)));
+        (S.logs[k] = S.logs[k] || {})[h.id] = { s, u: Math.min(5, u) };
+      }
+      h.start = key(addDays(now(), -back));
+    });
+    S.example = false; S.sel = S.habits[0].id; save(); for (const k in prevRing) delete prevRing[k]; acct.hide(); RENDER[view](); toast('Random history added');
+  });
   $('#m-reset').addEventListener('click', () => { $('#m-reset-confirm').hidden = false; $('#m-reset').hidden = true; });
   $('#m-reset-no').addEventListener('click', () => { $('#m-reset-confirm').hidden = true; $('#m-reset').hidden = false; });
   $('#m-reset-yes').addEventListener('click', () => { S = RRStore.blank(); save(); for (const k in prevRing) delete prevRing[k]; $('#m-reset-confirm').hidden = true; $('#m-reset').hidden = false; acct.hide(); RENDER[view](); toast('All check-ins deleted'); });
@@ -240,7 +256,7 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
           <div class="goal-ring" aria-label="${bn} of ${best.goal} days toward the goal"><svg viewBox="0 0 100 100"><circle class="trk" cx="50" cy="50" r="44"/><circle class="arc" cx="50" cy="50" r="44" stroke-dasharray="${GC}" stroke-dashoffset="${GC}" data-to="${GC * (1 - gp)}"/></svg><span><b>${best.goal}</b>days</span></div>
           <div><p class="eyebrow">${homeHabit === 'all' ? 'Longest current run' : 'Current run'}</p><div class="big-n" style="margin-top:14px"><b id="home-n">0</b><span>days</span></div><p class="hero-from">clean from ${esc(best.name.toLowerCase())}</p></div>
           <div class="hero-bottom"><div class="strip" aria-label="Last 30 days">${strip}</div>
-          <div class="actions-row"><button class="btn btn-primary" data-press data-nav="today">${done === ALL.length ? 'Review today' : 'Check in for today'}</button><button class="btn-text" data-act="toprog" data-h="${best.id}">See your progress</button></div></div></section>
+          <div class="actions-row"><button class="btn btn-primary" data-press data-nav="today">${done === ALL.length ? 'Review habits' : 'Check in for today'}</button><button class="btn-text" data-act="toprog" data-h="${best.id}">See your progress</button></div></div></section>
         <section class="glass card"><div class="chart-h"><h3>Today</h3><small>${done} of ${ALL.length} checked in</small></div><div class="status-list">${ALL.map(h => { const l = getLog(h.id, tk) || {};
           return `<div class="status"><span>${esc(h.name)}</span>${l.s ? `<button class="ci-done" data-nav="today" data-tip="${l.s === 'c' ? 'You stayed clean today' : 'You logged a slip today'}">${CHECK}Checked in</button>` : `<button class="btn btn-primary btn-sm" data-press data-nav="today">Check in</button>`}</div>`; }).join('')}</div></section>
       </div>
