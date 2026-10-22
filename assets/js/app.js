@@ -142,16 +142,33 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
   indX.on(paintInd); indW.on(paintInd);
   function placeInd(instant) { const b = $(`.tab[data-nav="${view}"]`); if (!b) return; indX.to(b.offsetLeft, { response: .38, damping: .86, instant }); indW.to(b.offsetWidth, { response: .38, damping: 1, instant }); }
   const viewP = new Spring(1, { eps: .001 }); let incoming = null;
-  viewP.on(p => { if (!incoming) return; incoming.style.opacity = p; incoming.style.transform = p >= 1 ? '' : `translateY(${(1 - p) * 14}px) scale(${.985 + .015 * p})`; incoming.style.filter = p >= .999 || motion.reduce ? '' : `blur(${(1 - p) * 8}px)`; });
+  // tabs slide like pages: the old view leaves to one side while the new one comes in from the other
+  let outgoing = null, slideDir = 1;
+  const resetOut = () => { if (!outgoing) return; outgoing.hidden = true; Object.assign(outgoing.style, { position: '', top: '', left: '', right: '', transform: '' }); outgoing = null; };
+  viewP.on(p => {
+    const W = innerWidth * .9;
+    if (incoming) incoming.style.transform = p >= .997 ? '' : `translate3d(${(slideDir * (1 - p) * W).toFixed(1)}px,0,0)`;
+    if (outgoing) { if (p >= .997) resetOut(); else outgoing.style.transform = `translate3d(${(-slideDir * p * W).toFixed(1)}px,0,0)`; }
+  });
   const RENDER = { home: renderHome, today: renderToday, progress: renderProgress, goals: renderGoals, read: renderRead };
   function go(v, { instant, fromRouter } = {}) {
     if (!VIEWS.includes(v)) v = 'home';
     const changed = v !== view; view = v;
     $$('.tab').forEach(t => t.removeAttribute('aria-current')); $(`.tab[data-nav="${v}"]`).setAttribute('aria-current', 'page');
     requestAnimationFrame(() => placeInd(instant));
-    $$('.view').forEach(s => s.hidden = s.dataset.view !== v);
+    const prevEl = incoming, slide = changed && !instant && !motion.reduce && prevEl && !prevEl.hidden;
+    resetOut(); if (incoming) incoming.style.transform = '';
+    const scr = prevEl ? prevEl.getBoundingClientRect().top : 0;
+    if (slide) slideDir = VIEWS.indexOf(v) > VIEWS.indexOf(prevEl.dataset.view) ? 1 : -1;
+    $$('.view').forEach(s => s.hidden = s.dataset.view !== v && !(slide && s === prevEl));
     incoming = $(`.view[data-view="${v}"]`); RENDER[v]();
-    if (changed) { RR.lenis ? RR.lenis.scrollTo(0, { immediate: true, force: true }) : window.scrollTo(0, 0); if (instant) viewP.set(1); else { viewP.set(0); viewP.to(1, { response: .42, damping: 1 }); } }
+    if (changed) {
+      RR.lenis ? RR.lenis.scrollTo(0, { immediate: true, force: true }) : window.scrollTo(0, 0);
+      if (slide) { const main = $('.app-main'); outgoing = prevEl;
+        Object.assign(outgoing.style, { position: 'absolute', left: '0', right: '0', top: (scr - main.getBoundingClientRect().top) + 'px' });
+        viewP.set(0); viewP.to(1, { response: .55, damping: 1 }); }
+      else viewP.set(1);
+    }
     if (!fromRouter) RR.pushPath(v === 'home' ? 'app' : 'app/' + v);
     document.title = (v === 'home' ? 'Home' : v[0].toUpperCase() + v.slice(1)) + ' · Re:Root';
   }

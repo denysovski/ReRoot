@@ -373,3 +373,16 @@ svg.year rect.fut{fill:none;stroke:var(--faint);stroke-width:1}
 #habit-form .fgrid{align-items:start}
 @media (max-width:700px){.seg.rng{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.seg.rng::-webkit-scrollbar{display:none}.seg.rng button{flex:none}}
 .hfilters{grid-template-columns:minmax(0,1fr)}
+
+/* ---------- round 8 ---------- */
+/* a soft veil at the top keeps the headings readable over the plasma */
+.app-main::before{content:"";position:absolute;left:0;right:0;top:0;height:min(620px,75vh);z-index:-1;pointer-events:none;
+  background:linear-gradient(180deg,rgba(6,6,7,.78) 0%,rgba(6,6,7,.5) 45%,rgba(6,6,7,0) 100%)}
+:root[data-theme="light"] .app-main::before{background:linear-gradient(180deg,rgba(255,255,255,.82) 0%,rgba(255,255,255,.52) 45%,rgba(255,255,255,0) 100%)}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]) .app-main::before{background:linear-gradient(180deg,rgba(255,255,255,.82) 0%,rgba(255,255,255,.52) 45%,rgba(255,255,255,0) 100%)}}
+/* corner buttons invert on hover */
+.corner{transition:background-color .35s ease,color .35s ease,box-shadow .35s ease,transform .2s}
+@media (hover:hover){.corner:hover{background:var(--fg)!important;color:var(--bg)!important}}
+/* views slide sideways between tabs */
+.app-main{overflow-x:clip}
+.view{will-change:transform}

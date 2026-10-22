@@ -1455,9 +1455,13 @@ a.logo-pill:hover{transform:scale(1.04)}
 #art-grid .read-more:hover::before,#art-grid .read-more:focus-visible::before{opacity:1;animation-play-state:running;transition:opacity .25s ease}
 #art-grid .read-more:hover{box-shadow:var(--btn-ring),0 0 26px 3px color-mix(in srgb,var(--fg) 28%,transparent);transition:box-shadow .3s ease}
 /* violet-pink light behind the globe */
-.globe-orb{position:absolute;left:50%;top:50%;width:min(150vmin,1500px);aspect-ratio:1;translate:-50% -50%;border-radius:50%;pointer-events:none;
-  background:radial-gradient(circle at 50% 50%,rgba(205,90,255,.75) 0%,rgba(236,100,200,.6) 36%,rgba(170,80,255,.38) 46%,rgba(124,92,255,.14) 58%,transparent 70%);filter:blur(36px);opacity:.9;animation:globeOrb 9s ease-in-out infinite alternate}
+.globe-orb{position:absolute;left:50%;top:50%;width:min(165vmin,1600px);aspect-ratio:1;translate:-50% -50%;border-radius:50%;pointer-events:none;z-index:-1;
+  background:radial-gradient(circle at 50% 50%,rgba(200,95,255,.5) 0%,rgba(232,104,206,.36) 30%,rgba(168,86,255,.18) 42%,rgba(124,92,255,.06) 54%,transparent 66%);filter:blur(44px);opacity:.55;animation:globeOrb 9s ease-in-out infinite alternate}
+/* the glow may spill softly into the sections above and below */
+.globe-sec{z-index:0;overflow-x:clip;overflow-y:visible}
+.globe-sec .globe-sticky{overflow:visible}
+.globe-sec ~ section,.globe-sec ~ div,.phead{position:relative;z-index:1}
 @keyframes globeOrb{from{transform:scale(.94) rotate(0deg)}to{transform:scale(1.04) rotate(25deg)}}
-:root[data-theme="light"] .globe-orb{opacity:.55}
-@media (prefers-color-scheme: light){:root:not([data-theme="dark"]) .globe-orb{opacity:.55}}
+:root[data-theme="light"] .globe-orb{opacity:.35}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]) .globe-orb{opacity:.35}}
 @media (prefers-reduced-motion: reduce){.globe-orb{animation:none}}
