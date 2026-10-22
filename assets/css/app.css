@@ -372,3 +372,4 @@ svg.year rect.fut{fill:none;stroke:var(--faint);stroke-width:1}
 .sheet .dd-btn,#habit-form .dd-btn{height:48px;border-radius:14px;font-size:15px}
 #habit-form .fgrid{align-items:start}
 @media (max-width:700px){.seg.rng{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.seg.rng::-webkit-scrollbar{display:none}.seg.rng button{flex:none}}
+.hfilters{grid-template-columns:minmax(0,1fr)}
