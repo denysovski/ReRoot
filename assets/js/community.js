@@ -54,22 +54,19 @@
           world.pins = world.land.features.filter(f => want[f.properties.name]).map(f => ({ name: want[f.properties.name], at: fix[f.properties.name] || d3.geoCentroid(f) })); }
         const center = [-rot[0], -rot[1]];
         ctx.font = '600 12px Geist, system-ui, sans-serif'; ctx.textBaseline = 'middle';
-        // place each label above its pin; if it would overlap one already placed, try higher or to the side
+        // every label keeps a fixed offset from its pin, so nothing jumps while the globe turns
+        const OFF = { 'United States': [0, -44], Canada: [0, -40], Australia: [0, -42], 'United Kingdom': [-62, -46], France: [-70, 14], Germany: [-14, -78], Poland: [64, -52], Czechia: [76, 4] };
         const placed = [];
         world.pins.forEach(pn => {
-          if (d3.geoDistance(pn.at, center) > 1.35) return; const pt = proj(pn.at); if (!pt) return;
-          const w = ctx.measureText(pn.name).width + 20, h = 26; let box = null;
-          for (const lift of [30, 60, 90, 120, 150]) { for (const dx of [0, -(w / 2 + 8), w / 2 + 8, -(w + 10), w + 10]) {
-            const b = { x: pt[0] - w / 2 + dx, y: pt[1] - lift - h, w, h };
-            if (!placed.some(o => b.x < o.x + o.w + 6 && b.x + b.w + 6 > o.x && b.y < o.y + o.h + 4 && b.y + b.h + 4 > o.y)) { box = b; break; } } if (box) break; }
-          if (!box) box = { x: pt[0] - w / 2, y: pt[1] - 180 - h, w, h };
-          placed.push(box); box.pt = pt; box.name = pn.name;
+          const dist = d3.geoDistance(pn.at, center); if (dist > 1.4) return; const pt = proj(pn.at); if (!pt) return;
+          const w = ctx.measureText(pn.name).width + 20, h = 26, [dx, dy] = OFF[pn.name] || [0, -40];
+          placed.push({ x: pt[0] + dx - w / 2, y: pt[1] + dy - h / 2, w, h, pt, name: pn.name, a: clamp((1.4 - dist) / .3) });
         });
         ctx.strokeStyle = L ? 'rgba(80,50,255,.8)' : 'rgba(190,170,255,.85)'; ctx.lineWidth = 1.2;
-        placed.forEach(b => { const ax = clamp(b.pt[0], b.x + 12, b.x + b.w - 12); ctx.beginPath(); ctx.moveTo(b.pt[0], b.pt[1]); ctx.lineTo(ax, b.y + b.h); ctx.stroke(); });
-        placed.forEach(b => { ctx.fillStyle = '#7c5cff'; ctx.beginPath(); ctx.arc(b.pt[0], b.pt[1], 4.5, 0, 7); ctx.fill(); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(b.pt[0], b.pt[1], 1.8, 0, 7); ctx.fill(); });
-        placed.forEach(b => { ctx.fillStyle = L ? 'rgba(15,15,18,.92)' : 'rgba(255,255,255,.94)'; ctx.beginPath(); ctx.roundRect(b.x, b.y, b.w, b.h, 13); ctx.fill();
-          ctx.fillStyle = L ? '#fff' : '#0b0b0c'; ctx.fillText(b.name, b.x + 10, b.y + 13.5); });
+        placed.forEach(b => { ctx.globalAlpha = b.a; const ax = clamp(b.pt[0], b.x + 12, b.x + b.w - 12), ay = clamp(b.pt[1], b.y + 6, b.y + b.h - 6), cy = b.pt[1] < b.y ? b.y : b.pt[1] > b.y + b.h ? b.y + b.h : ay, cx = b.pt[1] >= b.y && b.pt[1] <= b.y + b.h ? (b.pt[0] < b.x ? b.x : b.x + b.w) : ax; ctx.beginPath(); ctx.moveTo(b.pt[0], b.pt[1]); ctx.lineTo(cx, cy); ctx.stroke(); });
+        placed.forEach(b => { ctx.globalAlpha = b.a; ctx.fillStyle = '#7c5cff'; ctx.beginPath(); ctx.arc(b.pt[0], b.pt[1], 4.5, 0, 7); ctx.fill(); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(b.pt[0], b.pt[1], 1.8, 0, 7); ctx.fill(); });
+        placed.forEach(b => { ctx.globalAlpha = b.a; ctx.fillStyle = L ? 'rgba(15,15,18,.92)' : 'rgba(255,255,255,.94)'; ctx.beginPath(); ctx.roundRect(b.x, b.y, b.w, b.h, 13); ctx.fill();
+          ctx.fillStyle = L ? '#fff' : '#0b0b0c'; ctx.fillText(b.name, b.x + 10, b.y + 13.5); }); ctx.globalAlpha = 1;
       }
     };
     raf = requestAnimationFrame(draw);

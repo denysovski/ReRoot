@@ -54,17 +54,52 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
   const countUp = (el, to) => new Spring(0, { eps: .001 }).on(p => el.textContent = Math.round(to * clamp(p, 0, 1))).to(1, { response: 1, damping: 1 });
 
   /* ---------- corner menus ---------- */
-  menu($('#brand-btn'), $('#brand-menu'), { origin: 'top left' });
   const acct = menu($('#acct-btn'), $('#acct-menu'), { origin: 'top right' });
   function paintAcct() {
     user = auth.current();
     $('#m-name').textContent = user.name; $('#m-email').textContent = user.email;
     $$('#m-theme button').forEach(b => b.setAttribute('aria-pressed', b.dataset.t === theme.get()));
-    $('#m-notif').setAttribute('aria-checked', !!user.prefs.notif); $('#m-time').value = user.prefs.reminder || '20:00';
+    $('#m-notif').setAttribute('aria-checked', !!user.prefs.notif);
   }
   const zones = (() => { try { return Intl.supportedValuesOf('timeZone'); } catch (e) { return ['UTC', 'Europe/London', 'Europe/Prague', 'Europe/Berlin', 'America/New_York', 'America/Los_Angeles', 'Asia/Tokyo', 'Australia/Sydney']; } })();
   if (!zones.includes(tz())) zones.unshift(tz());
-  $('#m-tz').innerHTML = zones.map(z => `<option value="${z}" ${z === tz() ? 'selected' : ''}>${z.replace(/_/g, ' ')}</option>`).join('');
+  /* ---------- custom dropdowns: a list (with optional search) or an hour : minute picker ---------- */
+  const CHEV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+  function ddHTML(id, val, opts, o = {}) {
+    const cur = opts.find(x => x[0] === val) || opts[0];
+    return `<div class="dd" data-dd><button type="button" class="dd-btn" aria-haspopup="listbox" aria-expanded="false"><span class="dd-v">${esc(cur[1])}</span>${CHEV}</button>
+      <div class="dd-pop"><div class="dd-in">${o.search ? `<input class="dd-q" type="search" placeholder="${o.search}" autocomplete="off" aria-label="${o.search}">` : ''}
+      <ul class="dd-list" role="listbox" data-lenis-prevent>${opts.map(([v, l]) => `<li role="option" data-v="${esc(v)}" aria-selected="${v === cur[0]}">${esc(l)}</li>`).join('')}</ul></div></div>
+      <input type="hidden" id="${id}" value="${esc(cur[0])}"></div>`;
+  }
+  function timeDD(id, val) {
+    const [hh, mm] = (val || '20:00').split(':'), two = n => String(n).padStart(2, '0');
+    const col = (c, list, sel) => `<ul class="dd-list" data-col="${c}" role="listbox" aria-label="${c === 'h' ? 'Hour' : 'Minute'}" data-lenis-prevent>${list.map(v => `<li role="option" data-v="${v}" aria-selected="${v === sel}">${v}</li>`).join('')}</ul>`;
+    return `<div class="dd dd-time" data-dd><button type="button" class="dd-btn" aria-haspopup="listbox" aria-expanded="false"><span class="dd-v mono">${hh}:${mm}</span>${CHEV}</button>
+      <div class="dd-pop"><div class="dd-in"><div class="dd-cols">${col('h', Array.from({ length: 24 }, (_, i) => two(i)), hh)}<span class="dd-colon">:</span>${col('m', Array.from({ length: 12 }, (_, i) => two(i * 5)), mm)}</div></div></div>
+      <input type="hidden" id="${id}" value="${hh}:${mm}"></div>`;
+  }
+  function openDD(dd, on) {
+    dd.classList.toggle('open', on); $('.dd-btn', dd).setAttribute('aria-expanded', on); if (!on) return;
+    requestAnimationFrame(() => $$('li[aria-selected="true"]', dd).forEach(li => { const ul = li.parentElement; ul.scrollTop = li.offsetTop - ul.clientHeight / 2 + li.offsetHeight / 2; }));
+    const q = $('.dd-q', dd); if (q) { q.value = ''; $$('li', dd).forEach(li => li.hidden = false); setTimeout(() => q.focus({ preventScroll: true }), 250); }
+  }
+  document.addEventListener('click', e => {
+    const dd = e.target.closest('[data-dd]'); $$('.dd.open').forEach(d => d !== dd && openDD(d, false)); if (!dd) return;
+    if (e.target.closest('.dd-btn')) { openDD(dd, !dd.classList.contains('open')); return; }
+    const li = e.target.closest('li[data-v]'); if (!li) return;
+    const inp = $('input[type="hidden"]', dd), ul = li.parentElement;
+    $$('li', ul).forEach(x => x.setAttribute('aria-selected', x === li));
+    if (dd.classList.contains('dd-time')) { const h = $('[data-col="h"] [aria-selected="true"]', dd), m = $('[data-col="m"] [aria-selected="true"]', dd);
+      inp.value = `${h ? h.dataset.v : '20'}:${m ? m.dataset.v : '00'}`; if (ul.dataset.col === 'm') openDD(dd, false); }
+    else { inp.value = li.dataset.v; openDD(dd, false); }
+    $('.dd-v', dd).textContent = dd.classList.contains('dd-time') ? inp.value : li.textContent;
+    inp.dispatchEvent(new Event('change'));
+  }, { signal, capture: true });
+  document.addEventListener('input', e => { if (!e.target.matches('.dd-q')) return; const q = e.target.value.trim().toLowerCase(); $$('li', e.target.closest('.dd')).forEach(li => li.hidden = !!q && !li.textContent.toLowerCase().includes(q)); }, { signal });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') $$('.dd.open').forEach(d => openDD(d, false)); }, { signal });
+  $('#tz-dd').innerHTML = ddHTML('m-tz', tz(), zones.map(z => [z, z.replace(/_/g, ' ')]), { search: 'Search city or region' });
+  $('#time-dd').innerHTML = timeDD('m-time', user.prefs.reminder || '20:00');
   $('#m-tz').addEventListener('change', e => { user = auth.update({ prefs: { tz: e.target.value } }); toast(`Timezone set to ${e.target.value.replace(/_/g, ' ')}`); RENDER[view](); scheduleReminder(); });
   $('#m-theme').addEventListener('click', e => { const b = e.target.closest('[data-t]'); if (!b) return; theme.set(b.dataset.t); paintAcct(); RENDER[view](); });
   $('#m-notif').addEventListener('click', async () => {
@@ -78,7 +113,6 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
     user = auth.update({ prefs: { notif: on } }); paintAcct(); scheduleReminder(); toast(on ? 'Daily reminder on' : 'Daily reminder off');
   });
   $('#m-time').addEventListener('change', e => { user = auth.update({ prefs: { reminder: e.target.value || '20:00' } }); scheduleReminder(); toast(`Reminder set for ${e.target.value}`); });
-  $('#m-replay').addEventListener('click', () => { auth.update({ prefs: { onboarded: false } }); RR.navigate('onboarding'); });
   $('#m-reset').addEventListener('click', () => { $('#m-reset-confirm').hidden = false; $('#m-reset').hidden = true; });
   $('#m-reset-no').addEventListener('click', () => { $('#m-reset-confirm').hidden = true; $('#m-reset').hidden = false; });
   $('#m-reset-yes').addEventListener('click', () => { S = RRStore.blank(); save(); for (const k in prevRing) delete prevRing[k]; $('#m-reset-confirm').hidden = true; $('#m-reset').hidden = false; acct.hide(); RENDER[view](); toast('All check-ins deleted'); });
@@ -129,56 +163,77 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
   const greet = () => { const h = now().getHours(); return h < 5 ? 'Still up' : h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'; };
 
   /* ---------- HOME: overview, filtered by habit and time range ---------- */
-  let homeHabit = 'all', homeRange = 30;
+  let homeHabit = 'all', homeRange = 30, clockT = 0;
   const RANGES = [[1, '1 day'], [7, '7 days'], [30, '1 month'], [90, '3 months'], [180, '6 months'], [270, '9 months'], [365, '1 year'], ['all', 'All time']];
-  function renderHome() {
-    const r = $('#home-root'), tk = todayKey(), ALL = S.habits;
-    const head = `<header class="vhead"><p class="eyebrow">${fmt(now(), { weekday: 'long', month: 'long', day: 'numeric' })} · ${now().toTimeString().slice(0, 5)}</p><h1 class="vtitle">${greet()}, ${esc(user.name)}.</h1></header>${exampleBanner()}`;
-    if (!ALL.length) { r.innerHTML = head + emptyState(); return; }
+  const ord = n => n + (n % 100 > 10 && n % 100 < 14 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th');
+  const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  const rangeSeg = (act, cur) => `<div class="seg rng" role="group" aria-label="Time range"><span class="thumb" aria-hidden="true"></span>${RANGES.map(([v, l]) => `<button data-act="${act}" data-r="${v}" aria-pressed="${v === cur}">${l}</button>`).join('')}</div>`;
+  // the white thumb slides to the chosen range
+  function placeThumb(seg, anim) {
+    const b = $('[aria-pressed="true"]', seg), t = $('.thumb', seg); if (!b || !t) return;
+    if (!b.offsetWidth) { (anim || 0) < 30 && requestAnimationFrame(() => placeThumb(seg, false)); return; }
+    t.style.transition = anim && !motion.reduce ? '' : 'none';
+    Object.assign(t.style, { width: b.offsetWidth + 'px', height: b.offsetHeight + 'px', transform: `translate(${b.offsetLeft}px, ${b.offsetTop}px)` });
+  }
+  const daysSince = start => Math.max(1, Math.round((fromKey(todayKey()) - fromKey(start)) / 864e5) + 1);
+  addEventListener('resize', () => $$('.app-main .seg.rng').forEach(sg => placeThumb(sg, false)), { signal });
+  function pressIn(group, btn) { $$('[aria-pressed]', group).forEach(x => x.setAttribute('aria-pressed', x === btn)); const seg = btn.closest('.seg.rng'); seg && placeThumb(seg, true); }
+  function renderHome(soft) {
+    const r = $('#home-root'), tk = todayKey(), ALL = S.habits, n0 = now();
+    if (!ALL.length) { r.innerHTML = `<header class="vhead"><h1 class="vtitle">${greet()}, ${esc(user.name)}.</h1></header>${exampleBanner()}${emptyState()}`; return; }
     if (homeHabit !== 'all' && !ALL.find(h => h.id === homeHabit)) homeHabit = 'all';
+    if (!soft || !$('#home-dyn', r)) {
+      r.innerHTML = `<header class="vhead"><h1 class="vtitle">${greet()}, ${esc(user.name)}.</h1>
+        <p class="hdate">${fmt(n0, { weekday: 'long' })}, ${fmt(n0, { month: 'long' })} ${ord(n0.getDate())}</p>
+        <p class="hclock"><span class="mono" id="home-clock" data-tip="Timezone: ${esc(tz().replace(/_/g, ' '))}" tabindex="0">${n0.toTimeString().slice(0, 5)}</span></p></header>${exampleBanner()}
+        <div class="hfilters">
+          <div class="chips" role="group" aria-label="Habit"><button class="chip" data-act="hpick" data-h="all" aria-pressed="${homeHabit === 'all'}">All habits</button>${ALL.map(h => `<button class="chip" data-act="hpick" data-h="${h.id}" aria-pressed="${homeHabit === h.id}">${esc(h.name)}</button>`).join('')}</div>
+          ${rangeSeg('hrange', homeRange)}
+        </div><div id="home-dyn"></div>`;
+      requestAnimationFrame(() => placeThumb($('.seg.rng', r), false));
+      clearInterval(clockT); clockT = setInterval(() => { const c = $('#home-clock'); c && (c.textContent = now().toTimeString().slice(0, 5)); }, 15000);
+    }
     const H = homeHabit === 'all' ? ALL : ALL.filter(h => h.id === homeHabit);
     let best = null, bn = -1; H.forEach(h => { const n = currentStreak(h); if (n > bn) { bn = n; best = h; } });
     const earliest = H.reduce((m, h) => h.start < m ? h.start : m, tk);
-    const n = homeRange === 'all' ? Math.max(1, Math.round((fromKey(tk) - fromKey(earliest)) / 864e5) + 1) : homeRange;
-    const days = Array.from({ length: n }, (_, i) => { const d = addDays(now(), i - (n - 1)), k = key(d); let c = 0, x = 0, m = 0;
+    const n = homeRange === 'all' ? daysSince(earliest) : homeRange;
+    const days = Array.from({ length: n }, (_, i) => { const d = addDays(n0, i - (n - 1)), k = key(d); let c = 0, x = 0, m = 0;
       H.forEach(h => { if (k < h.start) return; m++; const l = getLog(h.id, k); if (l && l.s === 'c') c++; else if (l && l.s === 'x') x++; }); return { d, k, c, x, m }; });
     const clean = days.reduce((a, d) => a + d.c, 0), slips = days.reduce((a, d) => a + d.x, 0), possible = days.reduce((a, d) => a + (d.k < tk ? d.m : (d.c + d.x)), 0);
     const rt = clean + slips ? Math.round(clean / (clean + slips) * 100) : 0;
     const wd = [0, 0, 0, 0, 0, 0, 0], WD = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']; days.forEach(o => { wd[(o.d.getDay() + 6) % 7] += o.x; });
     const wmax = Math.max(1, ...wd), hard = wd.indexOf(Math.max(...wd));
-    // bars: up to 60, longer ranges are grouped
     const size = Math.ceil(n / 60), groups = []; for (let i = 0; i < n; i += size) { const g = days.slice(i, i + size); groups.push({ c: g.reduce((a, o) => a + o.c, 0), m: g.reduce((a, o) => a + o.m, 0), x: g.reduce((a, o) => a + o.x, 0) }); }
     const W = 300, Hh = 110, bw = W / Math.max(groups.length, 1);
     const bars = groups.map((g, i) => { const f = g.m ? g.c / g.m : 0, hgt = Math.max(2, f * (Hh - 10)); return `<rect class="anim-bar ${g.x ? 'sl' : ''}" x="${i * bw + Math.min(1.5, bw * .15)}" y="${Hh - hgt}" width="${Math.max(1, bw - Math.min(3, bw * .3))}" height="${hgt}" rx="2"/>`; }).join('');
     const wbars = wd.map((v, i) => `<div class="wdb ${i === hard && v ? 'hard' : ''}"><i class="anim-wd" style="--h:${v / wmax * 100}%"></i><span>${WD[i]}</span></div>`).join('');
-    const rl = RANGES.find(x => x[0] === homeRange)[1].toLowerCase(), strip = Array.from({ length: 30 }, (_, i) => { const l = getLog(best.id, key(addDays(now(), i - 29))); return `<i class="${l && l.s ? l.s : ''}"></i>`; }).join('');
-    const done = ALL.filter(h => (getLog(h.id, tk) || {}).s).length;
-    r.innerHTML = head + `
-      <div class="hfilters">
-        <div class="chips" role="group" aria-label="Habit"><button class="chip" data-press data-act="hpick" data-h="all" aria-pressed="${homeHabit === 'all'}">All habits</button>${ALL.map(h => `<button class="chip" data-press data-act="hpick" data-h="${h.id}" aria-pressed="${homeHabit === h.id}">${esc(h.name)}</button>`).join('')}</div>
-        <div class="seg rng" role="group" aria-label="Time range">${RANGES.map(([v, l]) => `<button data-act="hrange" data-r="${v}" aria-pressed="${v === homeRange}">${l}</button>`).join('')}</div>
-      </div>
+    const strip = Array.from({ length: 30 }, (_, i) => { const l = getLog(best.id, key(addDays(n0, i - 29))); return `<i class="${l && l.s ? l.s : ''}"></i>`; }).join('');
+    const done = ALL.filter(h => (getLog(h.id, tk) || {}).s).length, gp = clamp(bn / best.goal), GC = 2 * Math.PI * 44;
+    $('#home-dyn', r).innerHTML = `
       <div class="dash">
-        <section class="glass dash-hero"><span class="goal-pill">Goal ${best.goal} days</span><div><p class="eyebrow">${homeHabit === 'all' ? 'Longest current run' : 'Current run'}</p><div class="big-n" style="margin-top:14px"><b id="home-n">0</b><span>days</span></div><p class="hero-from">clean from ${esc(best.name.toLowerCase())}</p></div>
+        <section class="glass dash-hero">
+          <div class="goal-ring" aria-label="${bn} of ${best.goal} days toward the goal"><svg viewBox="0 0 100 100"><circle class="trk" cx="50" cy="50" r="44"/><circle class="arc" cx="50" cy="50" r="44" stroke-dasharray="${GC}" stroke-dashoffset="${GC}" data-to="${GC * (1 - gp)}"/></svg><span><b>${best.goal}</b>days</span></div>
+          <div><p class="eyebrow">${homeHabit === 'all' ? 'Longest current run' : 'Current run'}</p><div class="big-n" style="margin-top:14px"><b id="home-n">0</b><span>days</span></div><p class="hero-from">clean from ${esc(best.name.toLowerCase())}</p></div>
           <div class="hero-bottom"><div class="strip" aria-label="Last 30 days">${strip}</div>
           <div class="actions-row"><button class="btn btn-primary" data-press data-nav="today">${done === ALL.length ? 'Review today' : 'Check in for today'}</button><button class="btn-text" data-act="toprog" data-h="${best.id}">See your progress</button></div></div></section>
         <section class="glass card"><div class="chart-h"><h3>Today</h3><small>${done} of ${ALL.length} checked in</small></div><div class="status-list">${ALL.map(h => { const l = getLog(h.id, tk) || {};
-          return `<div class="status"><span>${esc(h.name)}</span>${l.s ? `<em class="${l.s === 'c' ? 'c' : ''}">${l.s === 'c' ? 'Clean' : 'Slipped'}</em>` : `<button class="btn btn-primary btn-sm" data-press data-nav="today">Check in</button>`}</div>`; }).join('')}</div></section>
+          return `<div class="status"><span>${esc(h.name)}</span>${l.s ? `<button class="ci-done" data-nav="today" data-tip="${l.s === 'c' ? 'You stayed clean today' : 'You logged a slip today'}">${CHECK}Checked in</button>` : `<button class="btn btn-primary btn-sm" data-press data-nav="today">Check in</button>`}</div>`; }).join('')}</div></section>
       </div>
       <div class="stats" style="margin-top:14px">
         <div class="glass card stat"><b data-count="${ALL.length}">0</b><span>Habits you're quitting</span></div>
-        <div class="glass card stat"><b><span data-count="${clean}">0</span><small> / ${possible}</small></b><span>Clean days, ${rl}</span></div>
-        <div class="glass card stat"><b><span data-count="${rt}">0</span>%</b><span>Clean rate, ${rl}</span></div>
-        <div class="glass card stat"><b data-count="${slips}">0</b><span>Slips, ${rl}</span></div></div>
+        <div class="glass card stat"><b><span data-count="${clean}">0</span><small> / ${possible}</small></b><span>Clean days</span></div>
+        <div class="glass card stat"><b><span data-count="${rt}">0</span>%</b><span>Clean rate</span></div>
+        <div class="glass card stat"><b data-count="${slips}">0</b><span>Slips</span></div></div>
       <div class="charts">
-        <section class="glass card chart"><div class="chart-h"><h3>${homeHabit === 'all' ? 'Every day, all habits' : 'Every day'}</h3><small>share kept clean, ${rl}${size > 1 ? ` · ${size} days per bar` : ''}</small></div>
+        <section class="glass card chart"><div class="chart-h"><h3>${homeHabit === 'all' ? 'Every day, all habits' : 'Every day'}</h3></div>
           <svg class="dash-bars" viewBox="0 0 ${W} ${Hh}" preserveAspectRatio="none" role="img" aria-label="Daily clean share">${bars}</svg>
           <div class="legend"><span><i class="c"></i>Clean share</span><span><i class="sl"></i>With a slip</span></div></section>
-        <section class="glass card chart"><div class="chart-h"><h3>When slips happen</h3><small>${rl}</small></div>
+        <section class="glass card chart"><div class="chart-h"><h3>When slips happen</h3></div>
           <div class="wdbars">${wbars}</div><p class="vsub" style="margin-top:12px">${Math.max(...wd) ? `Your hardest day is <b>${['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][hard]}</b>. Plan something for it.` : 'No slips in this period.'}</p></section>
       </div>`;
     const hn = $('#home-n'); hn && countUp(hn, bn);
     $$('[data-count]', r).forEach(el => countUp(el, +el.dataset.count));
+    const arc = $('.goal-ring .arc', r); requestAnimationFrame(() => requestAnimationFrame(() => arc && (arc.style.strokeDashoffset = arc.dataset.to)));
     const bs = $$('.anim-bar', r), ws = $$('.anim-wd', r);
     new Spring(0, { eps: .0005 }).on(p => { bs.forEach((b, i) => b.style.transform = `scaleY(${clamp(p * 1.6 - i / bs.length * .6)})`); ws.forEach(w => w.style.transform = `scaleY(${clamp(p)})`); }).to(1, { response: 1, damping: 1 });
   }
@@ -226,16 +281,21 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
       <circle class="anim-end" cx="${x(E)}" cy="${y(last.v)}" r="5" style="fill:var(--fg);stroke:var(--surface)" stroke-width="3" opacity="0"/>
       <text class="anim-end" x="${x(E) + 10}" y="${y(last.v) + 4}" style="fill:var(--fg);font-weight:600" opacity="0">${last.v}</text></svg>`;
   }
-  function urgeChart(h) {
-    const days = Array.from({ length: 14 }, (_, i) => addDays(now(), i - 13)), W = 360, H = 230, L = 22, R = 6, T = 14, B = 28, band = (W - L - R) / 14, bw = band * .56;
+  function urgeChart(h, n = 14) {
+    const size = Math.ceil(n / 31), cols = Math.ceil(n / size), W = 360, H = 230, L = 22, R = 6, T = 14, B = 28, band = (W - L - R) / cols, bw = band * .56;
     const y = v => T + (1 - v / 5) * (H - T - B);
-    return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Urge strength, last 14 days">
+    const groups = Array.from({ length: cols }, (_, c) => { let s = 0, k = 0, slip = false; const ds = [];
+      for (let j = 0; j < size; j++) { const d = addDays(now(), -(n - 1) + c * size + j); if (key(d) > todayKey()) continue; ds.push(d); const l = getLog(h.id, key(d)); if (l && l.u != null) { s += l.u; k++; } if (l && l.s === 'x') slip = true; }
+      return { d: ds[0] || now(), u: k ? s / k : null, slip }; });
+    const labs = cols <= 14 ? groups.map((g, i) => i) : [0, Math.floor(cols / 2), cols - 1];
+    return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Urge strength">
       ${[0, 1, 2, 3, 4, 5].map(t => `<line class="grid" x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}" ${t % 5 ? 'stroke-dasharray="2 4"' : ''}/>`).join('')}
       <text x="${L - 6}" y="${y(5) + 4}" text-anchor="end">5</text><text x="${L - 6}" y="${y(0) + 4}" text-anchor="end">0</text>
-      ${days.map((d, i) => { const l = getLog(h.id, key(d)), cx = L + band * i + band / 2;
-        const bar = l && l.u != null ? (l.u === 0 ? `<line x1="${cx - bw / 2}" x2="${cx + bw / 2}" y1="${y(0) - 1}" y2="${y(0) - 1}" style="stroke:var(--fg)" stroke-width="2"/>`
-          : `<rect class="anim-bar" x="${cx - bw / 2}" y="${y(l.u)}" width="${bw}" height="${y(0) - y(l.u)}" rx="3" style="fill:var(--fg);opacity:${l.s === 'x' ? 1 : .55};transform-origin:${cx}px ${y(0)}px"/>`) : '';
-        return `${bar}<text x="${cx}" y="${H - 8}" text-anchor="middle" ${i === 13 ? 'style="fill:var(--fg)"' : ''}>${fmt(d, { weekday: 'narrow' })}</text>`; }).join('')}</svg>`;
+      ${groups.map((g, i) => { const cx = L + band * i + band / 2;
+        const bar = g.u == null ? '' : g.u === 0 ? `<line x1="${cx - bw / 2}" x2="${cx + bw / 2}" y1="${y(0) - 1}" y2="${y(0) - 1}" style="stroke:var(--fg)" stroke-width="2"/>`
+          : `<rect class="anim-bar" x="${cx - bw / 2}" y="${y(g.u)}" width="${bw}" height="${y(0) - y(g.u)}" rx="${Math.min(3, bw / 2)}" style="fill:var(--fg);opacity:${g.slip ? 1 : .55};transform-origin:${cx}px ${y(0)}px"/>`;
+        const lab = labs.includes(i) ? `<text x="${cx}" y="${H - 8}" text-anchor="${cols > 14 ? (i === 0 ? 'start' : i === cols - 1 ? 'end' : 'middle') : 'middle'}" ${i === cols - 1 ? 'style="fill:var(--fg)"' : ''}>${cols <= 14 ? fmt(g.d, { weekday: 'narrow' }) : i === cols - 1 ? 'Today' : fmt(g.d, { month: 'short', day: 'numeric' })}</text>` : '';
+        return bar + lab; }).join('')}</svg>`;
   }
   // the whole calendar year: every day gets a square; days still ahead are empty outlines
   function heatmap(h) {
@@ -268,27 +328,32 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
     }).to(1, { response: 1.1, damping: 1 });
   }
   let progRange = 30;
-  function renderProgress() {
+  function renderProgress(soft) {
     const r = $('#progress-root');
     if (!S.habits.length) { r.innerHTML = `<header class="vhead"><h1 class="vtitle">Progress</h1></header>${emptyState()}`; return; }
     if (!S.habits.find(h => h.id === S.sel)) S.sel = S.habits[0].id;
-    const h = S.habits.find(x => x.id === S.sel), cur = currentStreak(h), lng = longest(h), PR = progRange, rt = rate(h, PR), au = avgUrge(h, Math.min(PR, 14));
+    const h = S.habits.find(x => x.id === S.sel), cur = currentStreak(h), lng = longest(h);
+    const PR = progRange === 'all' ? daysSince(h.start) : progRange, rt = rate(h, PR), au = avgUrge(h, PR);
     const slipsList = []; for (let i = 0; i < PR; i++) { const d = addDays(now(), -i), k = key(d); if (k < h.start) break; const l = getLog(h.id, k); if (l && l.s === 'x') slipsList.push({ d, u: l.u }); }
-    r.innerHTML = `<header class="vhead"><p class="eyebrow">Last ${PR} days</p><h1 class="vtitle">Progress</h1></header>
-      <div class="chips" role="group" aria-label="Habit">${S.habits.map(x => `<button class="chip" data-press data-act="pick" data-h="${x.id}" aria-pressed="${x.id === h.id}">${esc(x.name)}</button>`).join('')}</div>
-      <div class="seg rng" role="group" aria-label="Range" style="margin-bottom:14px">${[[30, '30 days'], [90, '90 days'], [365, '365 days']].map(([v, l]) => `<button data-act="prange" data-r="${v}" aria-pressed="${v === PR}">${l}</button>`).join('')}</div>
+    if (!soft || !$('#prog-dyn', r)) {
+      r.innerHTML = `<header class="vhead"><h1 class="vtitle">Progress</h1></header>
+      <div class="hfilters"><div class="chips" role="group" aria-label="Habit">${S.habits.map(x => `<button class="chip" data-act="pick" data-h="${x.id}" aria-pressed="${x.id === h.id}">${esc(x.name)}</button>`).join('')}</div>
+      ${rangeSeg('prange', progRange)}</div><div id="prog-dyn"></div>`;
+      requestAnimationFrame(() => placeThumb($('.seg.rng', r), false));
+    }
+    $('#prog-dyn', r).innerHTML = `
       <div class="stats">
         <div class="glass card stat"><b data-count="${cur}">0</b><span>Current streak, days</span></div>
         <div class="glass card stat"><b data-count="${lng}">0</b><span>Longest streak, days</span></div>
-        <div class="glass card stat"><b><span data-count="${rt}">0</span>%</b><span>Clean days, last ${PR} days</span></div>
-        <div class="glass card stat has-tip" data-tip="Your average urge strength over the last 14 days. 0 means no urge at all, 5 is the strongest urge."><b>${au == null ? '–' : au.toFixed(1)}</b><span>Average urge, 0–5, last 14 days</span></div></div>
+        <div class="glass card stat"><b><span data-count="${rt}">0</span>%</b><span>Clean days</span></div>
+        <div class="glass card stat has-tip" data-tip="Your average urge strength in the chosen period. 0 means no urge at all, 5 is the strongest urge."><b>${au == null ? '–' : au.toFixed(1)}</b><span>Average urge, 0–5</span></div></div>
       <div class="charts">
-        <section class="glass card chart"><div class="chart-h"><h3>Streak length</h3><small>days in a row, as of each day</small></div>${lineChart(h, PR)}</section>
-        <section class="glass card chart"><div class="chart-h"><h3>Urge strength</h3><small>last 14 days</small></div>${urgeChart(h)}<div class="legend"><span>Darker bar: slipped that day</span></div></section>
+        <section class="glass card chart"><div class="chart-h"><h3>Streak length</h3></div>${lineChart(h, Math.max(PR, 7))}</section>
+        <section class="glass card chart"><div class="chart-h"><h3>Urge strength</h3></div>${urgeChart(h, Math.max(PR, 7))}<div class="legend"><span>Darker bar: slipped that day</span></div></section>
         <section class="glass card chart span2"><div class="chart-h"><h3>${now().getFullYear()}</h3><small>every day of the year, Monday to Sunday</small></div><div class="year-wrap">${heatmap(h)}</div>${yearLegend()}</section></div>
-      <section class="glass card" style="margin-top:14px"><div class="chart-h"><h3>Days you slipped</h3><small>${slipsList.length} in the last ${PR} days</small></div>
+      <section class="glass card" style="margin-top:14px"><div class="chart-h"><h3>Days you slipped</h3><small>${slipsList.length} ${slipsList.length === 1 ? 'slip' : 'slips'}</small></div>
         ${slipsList.length ? `<table class="slips"><thead><tr><th>Date</th><th>Weekday</th><th>Urge</th></tr></thead><tbody>${slipsList.map(o => `<tr><td>${fmt(o.d, { month: 'short', day: 'numeric', year: 'numeric' })}</td><td>${fmt(o.d, { weekday: 'long' })}</td><td>${o.u == null ? '–' : o.u + ' / 5'}</td></tr>`).join('')}</tbody></table>` : '<p class="vsub">No slips in this period. Keep going.</p>'}</section>`;
-    $$('[data-count]', r).forEach(el => countUp(el, +el.dataset.count));
+    $$('[data-count]', $('#prog-dyn', r)).forEach(el => countUp(el, +el.dataset.count));
     animCharts(r);
   }
 
@@ -336,7 +401,6 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
           <p class="gc-goal">Goal: <b>${h.goal} days</b></p>
           <p>${left ? `${left} day${left === 1 ? '' : 's'} to your goal` : `Goal reached. ${n} days and counting.`} · ${nm ? `next milestone: day ${nm}` : 'every milestone collected'} · since ${fmt(fromKey(h.start), { month: 'short', day: 'numeric' })}</p>
           ${rm ? `<p>${rm}</p>` : ''}</div></div>
-        <div class="miles">${MILES.map(m => `<span class="mile ${n >= m ? 'on' : ''}">${m}d</span>`).join('')}</div>
       </article>`; }).join('')}<button class="addcard" data-press data-act="add">+ Add a habit</button></div>` : emptyState()}`;
     animateRings(r);
     if (gearOpen) { const g = $(`.gmenu [data-h="${gearOpen}"]`, r); g && g.closest('.gear-wrap').classList.add('open'); }
@@ -403,12 +467,11 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
       <small class="hint">Pick it once. You can only change it again from this settings screen, so it stays steady day to day.</small></div>
     ${h ? '' : `<div class="field"><label for="f-start">Tracking starts</label><input class="input" id="f-start" type="date" value="${todayKey()}" max="${todayKey()}"></div>`}
     <div class="fgrid">
-      <div class="field"><label for="f-time">Daily check-in reminder</label><select class="input" id="f-time">${TIMES.map(t => `<option value="${t}" ${(h ? h.time || '' : '') === t ? 'selected' : ''}>${t || 'Off'}</option>`).join('')}</select></div>
-      <div class="field"><label for="f-nudges">Reminders during the day</label><select class="input" id="f-nudges">${[0, 1, 2, 3, 4, 5, 6, 8].map(v => `<option value="${v}" ${(h ? h.nudges || 0 : 0) === v ? 'selected' : ''}>${v ? `${v} time${v > 1 ? 's' : ''} a day` : 'Off'}</option>`).join('')}</select></div>
+      <div class="field"><label>Daily check-in reminder</label>${ddHTML('f-time', h ? h.time || '' : '', TIMES.map(t => [t, t || 'Off']))}</div>
+      <div class="field"><label>Reminders during the day</label>${ddHTML('f-nudges', String(h ? h.nudges || 0 : 0), [0, 1, 2, 3, 4, 5, 6, 8].map(v => [String(v), v ? `${v} time${v > 1 ? 's' : ''} a day` : 'Off']))}</div>
     </div>
     <div class="field"><label for="f-instead">What will you do instead?</label><input class="input" id="f-instead" maxlength="80" placeholder="e.g. Go for a 5-minute walk" value="${h ? esc(h.instead || '') : ''}"></div>
     <div class="field"><label for="f-why">Why do you want to quit? <span class="opt">optional</span></label><input class="input" id="f-why" maxlength="120" placeholder="e.g. I want healthy nails by summer" value="${h ? esc(h.why || '') : ''}"></div>
-    <p class="hint">Reminders spread evenly between 9:00 and 21:00 and show your "instead" plan. They pop up as a browser notification with a sound while Re:Root is open in a tab.</p>
     <div class="actions"><button class="btn btn-primary btn-block" type="submit" data-press>${h ? 'Save changes' : 'Add habit'}</button><button type="button" class="btn-text" data-act="close-sheet">Cancel</button></div></form>`;
   document.addEventListener('submit', async e => {
     if (e.target.id !== 'habit-form') return; e.preventDefault();
@@ -474,8 +537,8 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
       case 'daypick': { const k = b.dataset.k; dayPop = dayPop && dayPop.h === id && dayPop.k === k ? null : { h: id, k }; renderToday(); break; }
       case 'setday': { const k = b.dataset.k, sv = b.dataset.s; setLog(id, k, { s: sv || undefined }); buzz(); dayPop = null; renderToday(); if (sv === 'c') toast('Logged as clean'); break; }
       case 'toprog': S.sel = id; save(); gearOpen = null; $$('.gear-wrap.open').forEach(w => w.classList.remove('open')); go('progress'); break;
-      case 'hpick': homeHabit = id; renderHome(); break;
-      case 'hrange': homeRange = b.dataset.r === 'all' ? 'all' : +b.dataset.r; renderHome(); break;
+      case 'hpick': homeHabit = id; pressIn(b.parentElement, b); renderHome(true); break;
+      case 'hrange': homeRange = b.dataset.r === 'all' ? 'all' : +b.dataset.r; pressIn(b.parentElement, b); renderHome(true); break;
       case 'cycle': { const k = b.dataset.k, cur = (getLog(id, k) || {}).s; setLog(id, k, { s: cur === 'c' ? 'x' : cur === 'x' ? undefined : 'c' }); buzz(); renderToday(); break; }
       case 'add': newGoal = 30; editId = null; openSheet('New habit', habitForm()); break;
       case 'edit': { const h = S.habits.find(x => x.id === id); gearOpen = null; $$('.gear-wrap.open').forEach(w => w.classList.remove('open')); newGoal = h.goal; editId = id; openSheet(`Edit ${h.name}`, habitForm(h)); break; }
@@ -487,8 +550,8 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
         if (navigator.share) navigator.share({ title: 'My progress', text: txt }).catch(() => {}); else if (navigator.clipboard) navigator.clipboard.writeText(txt).then(() => toast('Progress copied to share'), () => toast(txt)); else toast(txt); break; }
       case 'pick-goal': newGoal = +b.dataset.g; $$('#goal-row .chip').forEach(c => c.setAttribute('aria-pressed', +c.dataset.g === newGoal)); break;
       case 'close-sheet': closeSheet(); break;
-      case 'pick': S.sel = id; save(); renderProgress(); break;
-      case 'prange': progRange = +b.dataset.r; renderProgress(); break;
+      case 'pick': S.sel = id; save(); pressIn(b.parentElement, b); renderProgress(true); break;
+      case 'prange': progRange = b.dataset.r === 'all' ? 'all' : +b.dataset.r; pressIn(b.parentElement, b); renderProgress(true); break;
       case 'del': confirmDel = id; renderGoals(); break;
       case 'del-no': confirmDel = null; renderGoals(); break;
       case 'del-yes': S.habits = S.habits.filter(h => h.id !== id); for (const k in S.logs) delete S.logs[k][id]; confirmDel = null; gearOpen = null; save(); renderGoals(); toast('Habit deleted forever'); break;

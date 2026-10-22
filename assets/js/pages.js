@@ -113,6 +113,8 @@
         }
         const c = e.target.closest('.art-card'); if (c && !e.target.closest('a,button')) RR.navigate(c.dataset.href);
       }, { signal });
+      // keep the light orbiting while it fades out after the pointer leaves
+      root.addEventListener('pointerout', e => { const b = e.target.closest('.read-more'); if (!b || b.contains(e.relatedTarget)) return; b.classList.add('fading'); clearTimeout(b._ft); b._ft = setTimeout(() => b.classList.remove('fading'), 950); }, { signal });
       $('#art-q', root).addEventListener('input', e => { q = e.target.value.trim().toLowerCase(); render(); }, { signal });
       render();
     },

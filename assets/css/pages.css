@@ -1444,12 +1444,20 @@ a.logo-pill:hover{transform:scale(1.04)}
 .swap + .steps{margin-top:0}
 .sw-q{opacity:1}
 
-/* ---------- articles: light orbit around Read more ---------- */
-#art-grid .read-more{position:relative;isolation:isolate;overflow:visible;transition:box-shadow .4s,background-color .3s}
+/* ---------- articles: light orbit around Read more (fades in on hover, fades out slowly on leave) ---------- */
+#art-grid .read-more{position:relative;isolation:isolate;overflow:visible;transition:box-shadow .9s ease,background-color .3s}
 #art-grid .read-more::before{content:"";position:absolute;inset:-4px;border-radius:inherit;padding:2.5px;pointer-events:none;
-  background:conic-gradient(from var(--ang),transparent 0deg,transparent 250deg,color-mix(in srgb,var(--fg) 90%,transparent) 330deg,transparent 360deg);
+  background:conic-gradient(from var(--ang),transparent 0deg,transparent 250deg,var(--fg) 330deg,transparent 360deg);
   -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);
-  filter:drop-shadow(0 0 6px var(--fg)) drop-shadow(0 0 2px var(--fg));opacity:0;transition:opacity .3s}
+  filter:drop-shadow(0 0 6px var(--fg)) drop-shadow(0 0 2px var(--fg));opacity:0;animation:rmOrbit 1.6s linear infinite;animation-play-state:paused;transition:opacity .9s ease}
 @keyframes rmOrbit{to{--ang:360deg}}
-#art-grid .gcard:hover .read-more::before,#art-grid .read-more:hover::before,#art-grid .read-more:focus-visible::before{opacity:1;animation:rmOrbit 1.6s linear infinite}
-#art-grid .gcard:hover .read-more{box-shadow:var(--btn-ring),0 0 26px 3px color-mix(in srgb,var(--fg) 28%,transparent)}
+#art-grid .read-more.fading::before{animation-play-state:running}
+#art-grid .read-more:hover::before,#art-grid .read-more:focus-visible::before{opacity:1;animation-play-state:running;transition:opacity .25s ease}
+#art-grid .read-more:hover{box-shadow:var(--btn-ring),0 0 26px 3px color-mix(in srgb,var(--fg) 28%,transparent);transition:box-shadow .3s ease}
+/* violet-pink light behind the globe */
+.globe-orb{position:absolute;left:50%;top:50%;width:min(150vmin,1500px);aspect-ratio:1;translate:-50% -50%;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle at 50% 50%,rgba(205,90,255,.75) 0%,rgba(236,100,200,.6) 36%,rgba(170,80,255,.38) 46%,rgba(124,92,255,.14) 58%,transparent 70%);filter:blur(36px);opacity:.9;animation:globeOrb 9s ease-in-out infinite alternate}
+@keyframes globeOrb{from{transform:scale(.94) rotate(0deg)}to{transform:scale(1.04) rotate(25deg)}}
+:root[data-theme="light"] .globe-orb{opacity:.55}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]) .globe-orb{opacity:.55}}
+@media (prefers-reduced-motion: reduce){.globe-orb{animation:none}}
