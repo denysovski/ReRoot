@@ -12,26 +12,27 @@
     const { clamp, motion } = RR, cv = sec.querySelector('.globe-cv'), ctx = cv.getContext('2d');
     if (!window.d3 || !d3.geoOrthographic || !window.topojson) return;
     let W = 0, H = 0, dpr = 1, rot = [20, -25], vel = .12, drag = null, raf = 0, t0 = performance.now(), world = null;
-    const proj = d3.geoOrthographic().clipAngle(90).precision(.4), path = d3.geoPath(proj, ctx), grat = d3.geoGraticule10(), sphere = { type: 'Sphere' };
+    const proj = d3.geoOrthographic().clipAngle(90).precision(1.2), path = d3.geoPath(proj, ctx), grat = d3.geoGraticule10(), sphere = { type: 'Sphere' };
     const isLight = () => document.documentElement.dataset.theme === 'light' || (!document.documentElement.dataset.theme && matchMedia('(prefers-color-scheme: light)').matches);
-    const size = () => { dpr = 1.5; const w = cv.clientWidth, h = cv.clientHeight; if (w === W && h === H) return; W = w; H = h; cv.width = W * dpr; cv.height = H * dpr; };
+    const size = () => { dpr = Math.min(1.25, Math.max(1, devicePixelRatio || 1)); const w = cv.clientWidth, h = cv.clientHeight; if (w === W && h === H) return; W = w; H = h; cv.width = W * dpr; cv.height = H * dpr; };
     const ro = new ResizeObserver(size); ro.observe(cv); size();
     loadWorld().then(w => world = w).catch(() => {});
     let visible = true; const io = new IntersectionObserver(es => visible = es[0].isIntersecting); io.observe(cv);
     // pre-computed dot vectors + a glow sprite: one cheap drawImage per dot instead of shadowBlur paths
-    const V = DOTS.filter((d, k) => d[2] > .55 || k % 2 === 0).map(d => { const la = d[1] * Math.PI / 180, lo = d[0] * Math.PI / 180; return [d[0], d[1], d[2], Math.sin(la), Math.cos(la), lo]; });
+    const V = DOTS.filter((d, k) => k % (d[2] > .55 ? 2 : 4) === 0).map(d => { const la = d[1] * Math.PI / 180, lo = d[0] * Math.PI / 180; return [d[0], d[1], d[2], Math.sin(la), Math.cos(la), lo]; });
     const sprite = (light) => { const c = document.createElement('canvas'), z = 32; c.width = c.height = z; const g = c.getContext('2d'), gr = g.createRadialGradient(z / 2, z / 2, 0, z / 2, z / 2, z / 2);
       gr.addColorStop(0, light ? 'rgba(80,50,255,1)' : 'rgba(235,225,255,1)'); gr.addColorStop(.22, light ? 'rgba(100,70,255,.9)' : 'rgba(170,140,255,.9)'); gr.addColorStop(1, 'rgba(140,110,255,0)');
       g.fillStyle = gr; g.fillRect(0, 0, z, z); return c; };
     const SPR = { d: sprite(false), l: sprite(true) };
-    let last = 0;
+    let last = 0, scrollT = 0, lastScrollDraw = 0; addEventListener('scroll', () => scrollT = performance.now(), { passive: true, signal });
     const draw = now => {
       raf = requestAnimationFrame(draw); if (!W || !visible) return;
-      if (now - last < 1000 / 45) return; last = now;   // ~45 fps is plenty for a slow spin
+      if (now - last < 1000 / 30 - 2) return; last = now;   // 30 fps is plenty for a slow spin
+      if (!drag && performance.now() - scrollT < 140 && now - lastScrollDraw < 1000 / 15) return; lastScrollDraw = now;   // while the page scrolls, spin at a lower rate to leave room for scrolling
       if (!drag && !motion.reduce) rot[0] += vel * 1.33;
       const L = isLight(), R = Math.min(W, H) * .44;
       proj.scale(R).translate([W / 2, H / 2]).rotate(rot);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); const pad = R * 1.75; ctx.clearRect(Math.max(0, W / 2 - pad), Math.max(0, H / 2 - pad), pad * 2, pad * 2);
       ctx.beginPath(); path(sphere); ctx.fillStyle = L ? '#e4e4e8' : '#101012'; ctx.fill();
       ctx.beginPath(); path(grat); ctx.strokeStyle = L ? 'rgba(0,0,0,.06)' : 'rgba(255,255,255,.05)'; ctx.lineWidth = .7; ctx.stroke();
       if (world) {
@@ -39,12 +40,11 @@
         ctx.beginPath(); path(world.borders); ctx.strokeStyle = L ? 'rgba(0,0,0,.22)' : 'rgba(255,255,255,.22)'; ctx.lineWidth = .6; ctx.stroke();
       }
       ctx.beginPath(); path(sphere); ctx.strokeStyle = L ? 'rgba(0,0,0,.18)' : 'rgba(255,255,255,.18)'; ctx.lineWidth = 1; ctx.stroke();
-      const c = proj.rotate(), lam = -c[0] * Math.PI / 180, phi = -c[1] * Math.PI / 180, sp = Math.sin(phi), cp = Math.cos(phi), base = Math.max(5, R / 42), img = L ? SPR.l : SPR.d;
+      const dl = rot[0] * Math.PI / 180, dp = rot[1] * Math.PI / 180, cdp = Math.cos(dp), sdp = Math.sin(dp), cx = W / 2, cy = H / 2, base = Math.max(5, R / 42), img = L ? SPR.l : SPR.d;
       for (let k = 0; k < V.length; k++) {
-        const d = V[k], cc = sp * d[3] + cp * d[4] * Math.cos(d[5] - lam); if (cc <= .04) continue;
-        const pt = proj([d[0], d[1]]); if (!pt) continue;
-        const sz = base * (.55 + d[2] * .75); ctx.globalAlpha = Math.min(1, cc * 1.5) * (.3 + .7 * d[2]);
-        ctx.drawImage(img, pt[0] - sz / 2, pt[1] - sz / 2, sz, sz);
+        const d = V[k], lo = d[5] + dl, x = d[4] * Math.cos(lo), y = d[4] * Math.sin(lo), z = d[3], vis = x * cdp - z * sdp; if (vis <= .04) continue;
+        const kz = z * cdp + x * sdp, sz = base * (.55 + d[2] * .75); ctx.globalAlpha = Math.min(1, vis * 1.5) * (.3 + .7 * d[2]);
+        ctx.drawImage(img, cx + R * y - sz / 2, cy - R * kz - sz / 2, sz, sz);
       }
       ctx.globalAlpha = 1;
       // pins with labels for the eight countries in the table

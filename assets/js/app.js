@@ -287,13 +287,16 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
     return `<article class="glass card hc">
       <div class="hc-top"><div style="min-width:0"><button class="hc-name" data-act="toprog" data-h="${h.id}" title="Open progress">${esc(h.name)}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button><div class="hc-meta">${n} of ${h.goal} days${nm ? ` · next milestone ${nm}` : ''}</div></div>${ringSVG(h.id, clamp(n / h.goal), n)}</div>
       <div class="week">${week}</div>
-      ${dayPop && dayPop.h === h.id ? (() => { const g = getLog(h.id, dayPop.k) || {}; return `<div class="daypop"><span>${fmt(fromKey(dayPop.k), { weekday: 'long', month: 'short', day: 'numeric' })}</span><div class="dp-btns"><button data-act="setday" data-h="${h.id}" data-k="${dayPop.k}" data-s="c" aria-pressed="${g.s === 'c'}">Stayed clean</button><button data-act="setday" data-h="${h.id}" data-k="${dayPop.k}" data-s="x" aria-pressed="${g.s === 'x'}">Slipped</button><button data-act="setday" data-h="${h.id}" data-k="${dayPop.k}" data-s="" class="dp-clear">Clear</button></div></div>`; })() : ''}
+      ${dayPop && dayPop.h === h.id ? (() => { const g = getLog(h.id, dayPop.k) || {}; return `<div class="dpwrap ${dpAnim === h.id ? '' : 'open'}" data-dp="${h.id}"><div><div class="daypop"><span>${fmt(fromKey(dayPop.k), { weekday: 'long', month: 'short', day: 'numeric' })}</span><div class="dp-btns"><button data-act="setday" data-h="${h.id}" data-k="${dayPop.k}" data-s="c" aria-pressed="${g.s === 'c'}">Stayed clean</button><button data-act="setday" data-h="${h.id}" data-k="${dayPop.k}" data-s="x" aria-pressed="${g.s === 'x'}">Slipped</button><button data-act="setday" data-h="${h.id}" data-k="${dayPop.k}" data-s="" class="dp-clear">Clear</button></div></div></div></div>`; })() : ''}
       <div class="choice"><button data-press data-act="clean" data-h="${h.id}" aria-pressed="${l.s === 'c'}">Stayed clean</button><button data-press data-act="slip" data-h="${h.id}" aria-pressed="${l.s === 'x'}">Slipped</button></div>
       <div class="urge"><div class="urge-lab"><span>Urge strength today</span><span>0 none · 5 intense</span></div><div class="seg" role="group" aria-label="Urge strength">${[0, 1, 2, 3, 4, 5].map(u => `<button data-press data-act="urge" data-h="${h.id}" data-u="${u}" aria-pressed="${l.u === u}">${u}</button>`).join('')}</div></div>
       <div class="slipwrap ${l.s === 'x' && slipAnim !== h.id ? 'open' : ''}" data-slip="${h.id}"><div><p class="slipnote">A slip is information, not a verdict. Your earlier clean days still count. <button data-act="article" data-a="slip">What to do next</button></p></div></div>
     </article>`;
   }
-  let slipAnim = null, dayPop = null, justKey = null;
+  let slipAnim = null, dayPop = null, justKey = null, dpAnim = null, dpT = 0;
+  // close the past-day panel with the same soft collapse it opened with, then redraw
+  function closeDayPop(after) { clearTimeout(dpT); const w = dayPop && $(`[data-dp="${dayPop.h}"]`); if (!w || motion.reduce) { dayPop = null; after && after(); renderToday(); return; }
+    w.classList.remove('open'); dpT = setTimeout(() => { dayPop = null; after && after(); renderToday(); }, 430); }
   function renderToday() {
     const r = $('#today-root'), tk = todayKey(), done = S.habits.filter(h => (getLog(h.id, tk) || {}).s).length;
     r.innerHTML = `<header class="vhead"><p class="eyebrow">${fmt(now(), { weekday: 'long', month: 'long', day: 'numeric' })}</p><h1 class="vtitle">Today</h1>
@@ -303,6 +306,7 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
       <section class="glass card note"><label for="note-today" style="font-weight:600">What helped today?</label><textarea id="note-today" placeholder="A walk after dinner, texting a friend, leaving the phone in the kitchen…">${esc(S.notes[tk] || '')}</textarea><small>Saved automatically in this browser.</small></section>` : emptyState()}`;
     animateRings(r);
     if (justKey) { const el = $(justKey, r); justKey = null; el && el.classList.add('just'); }
+    if (dpAnim) { const w = $(`[data-dp="${dpAnim}"]`, r); dpAnim = null; w && requestAnimationFrame(() => requestAnimationFrame(() => w.classList.add('open'))); }
     if (slipAnim) { const w = $(`[data-slip="${slipAnim}"]`, r); slipAnim = null; w && requestAnimationFrame(() => requestAnimationFrame(() => w.classList.add('open'))); }
     const ta = $('#note-today'); ta && ta.addEventListener('input', () => { S.notes[tk] = ta.value; save(); });
   }
@@ -575,8 +579,10 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
         else renderToday();
         if (s === 'c' && cur.s !== 'c') toast('Logged. One more clean day.'); break; }
       case 'urge': { const u = +b.dataset.u, cur = getLog(id, tk) || {}; setLog(id, tk, { u: cur.u === u ? undefined : u }); if (cur.u !== u) justKey = `.seg [data-h="${id}"][data-u="${u}"]`; renderToday(); break; }
-      case 'daypick': { const k = b.dataset.k; dayPop = dayPop && dayPop.h === id && dayPop.k === k ? null : { h: id, k }; renderToday(); break; }
-      case 'setday': { const k = b.dataset.k, sv = b.dataset.s; setLog(id, k, { s: sv || undefined }); buzz(); dayPop = null; renderToday(); if (sv === 'c') toast('Logged as clean'); break; }
+      case 'daypick': { const k = b.dataset.k; clearTimeout(dpT);
+        if (dayPop && dayPop.h === id && dayPop.k === k) { closeDayPop(); break; }
+        if (!dayPop || dayPop.h !== id) dpAnim = id; dayPop = { h: id, k }; renderToday(); break; }
+      case 'setday': { const k = b.dataset.k, sv = b.dataset.s; setLog(id, k, { s: sv || undefined }); buzz(); renderToday(); setTimeout(() => closeDayPop(), 260); if (sv === 'c') toast('Logged as clean'); break; }
       case 'toprog': S.sel = id; save(); gearOpen = null; $$('.gear-wrap.open').forEach(w => w.classList.remove('open')); go('progress'); break;
       case 'hpick': homeHabit = id; pressIn(b.parentElement, b); renderHome(true); break;
       case 'hrange': homeRange = b.dataset.r === 'all' ? 'all' : +b.dataset.r; pressIn(b.parentElement, b); renderHome(true); break;

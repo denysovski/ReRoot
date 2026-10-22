@@ -386,3 +386,9 @@ svg.year rect.fut{fill:none;stroke:var(--faint);stroke-width:1}
 /* views slide sideways between tabs */
 .app-main{overflow-x:clip}
 .view{will-change:transform}
+/* past-day panel opens and closes like the slip note */
+.dpwrap{display:grid;grid-template-rows:0fr;opacity:0;transition:grid-template-rows .45s var(--ease),opacity .35s var(--ease)}
+.dpwrap>div{overflow:hidden;min-height:0}
+.dpwrap.open{grid-template-rows:1fr;opacity:1}
+.dpwrap .daypop{animation:none}
+@media (prefers-reduced-motion: reduce){.dpwrap{transition:none}}

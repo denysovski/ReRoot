@@ -1456,7 +1456,7 @@ a.logo-pill:hover{transform:scale(1.04)}
 #art-grid .read-more:hover{box-shadow:var(--btn-ring),0 0 26px 3px color-mix(in srgb,var(--fg) 28%,transparent);transition:box-shadow .3s ease}
 /* violet-pink light behind the globe */
 .globe-orb{position:absolute;left:50%;top:50%;width:min(165vmin,1600px);aspect-ratio:1;translate:-50% -50%;border-radius:50%;pointer-events:none;z-index:-1;
-  background:radial-gradient(circle at 50% 50%,rgba(200,95,255,.5) 0%,rgba(232,104,206,.36) 30%,rgba(168,86,255,.18) 42%,rgba(124,92,255,.06) 54%,transparent 66%);filter:blur(44px);opacity:.55;animation:globeOrb 9s ease-in-out infinite alternate}
+  background:radial-gradient(circle at 50% 50%,rgba(200,95,255,.5) 0%,rgba(232,104,206,.36) 30%,rgba(168,86,255,.18) 42%,rgba(124,92,255,.06) 54%,transparent 66%);opacity:.55;will-change:transform;animation:globeOrb 9s ease-in-out infinite alternate}
 /* the glow may spill softly into the sections above and below */
 .globe-sec{z-index:0;overflow-x:clip;overflow-y:visible}
 .globe-sec .globe-sticky{overflow:visible}
