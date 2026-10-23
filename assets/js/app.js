@@ -54,6 +54,7 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
   const countUp = (el, to) => new Spring(0, { eps: .001 }).on(p => el.textContent = Math.round(to * clamp(p, 0, 1))).to(1, { response: 1, damping: 1 });
 
   /* ---------- corner menus ---------- */
+  $('#brand-btn').addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); RR.splashTo(''); }, { signal });
   const acct = menu($('#acct-btn'), $('#acct-menu'), { origin: 'top right' });
   function paintAcct() {
     user = auth.current();

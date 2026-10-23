@@ -107,6 +107,15 @@
   try { const r = sessionStorage.getItem('reroot.redirect'); if (r) { sessionStorage.removeItem('reroot.redirect'); history.replaceState(null, '', r); } } catch (e) {}
   render();
 
+  // show the loading screen again for a full switch of context (e.g. leaving the app for the website)
+  RR.splashTo = path => {
+    if (motion.reduce) return navigate(path);
+    const el = document.createElement('div'); el.id = 'splash'; el.className = 'again'; el.setAttribute('aria-hidden', 'true');
+    el.innerHTML = '<svg viewBox="0 0 80 80"><circle class="t" cx="40" cy="40" r="34" fill="none" stroke-width="5"/><circle class="a" cx="40" cy="40" r="34" fill="none" stroke-width="5" pathLength="1"/></svg><span>RE:ROOT</span>';
+    document.body.appendChild(el);
+    setTimeout(() => navigate(path), 340);
+    setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 650); }, 1150);
+  };
   // splash once per session
   const splash = $('#splash'); let seen = false;
   try { seen = sessionStorage.getItem('reroot.splash') === '1'; sessionStorage.setItem('reroot.splash', '1'); } catch (e) {}
