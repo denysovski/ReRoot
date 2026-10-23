@@ -30,7 +30,7 @@
           <div class="actions-row">${user ? '<a class="btn btn-primary btn-sm" data-press href="app">Open app</a>' : '<a class="btn btn-primary btn-sm" data-press href="register">Get started</a><a class="btn-text" href="login">Log in</a>'}</div></div>
         ${col('Product', [['how-it-works', 'How it works'], ['showcase', 'Showcase'], ['articles', 'Articles'], ['community', 'Community']])}
         ${col('Company', [['about', 'About Re:Root'], ['faq', 'FAQ'], ['contact', 'Contact']])}
-        ${col('Legal', [['terms', 'Terms & conditions'], ['privacy', 'Privacy policy'], ['terms#disclaimer', 'Medical disclaimer']])}
+        ${col('Legal', [['terms', 'Terms & conditions'], ['privacy', 'Privacy policy'], ['medical-disclaimer', 'Medical disclaimer']])}
         ${col('Account', user ? [['app', 'Open app'], ['app/today', 'Today\'s check-in'], ['app/progress', 'Your progress']] : [['login', 'Log in'], ['register', 'Create account'], ['how-it-works', 'Getting started']])}
       </div>
       <div class="f-bottom"><span>© 2026 Re:Root · Demo project. Accounts are simulated and stored only in your browser.</span><button class="btn-text" id="to-top">Back to top</button></div>

@@ -6,7 +6,7 @@
   const ROUTES = [
     ['', 'home', 'site'], ['how-it-works', 'how', 'site'], ['showcase', 'showcase', 'site'], ['community', 'community', 'site'],
     ['articles', 'articles', 'site'], ['articles/:id', 'article', 'site'], ['about', 'about', 'site'], ['faq', 'faq', 'site'],
-    ['contact', 'contact', 'site'], ['terms', 'terms', 'site'], ['privacy', 'privacy', 'site'],
+    ['contact', 'contact', 'site'], ['terms', 'terms', 'site'], ['privacy', 'privacy', 'site'], ['medical-disclaimer', 'medical', 'site'],
     ['login', 'login', 'site', { guest: true }], ['register', 'register', 'site', { guest: true }],
     ['onboarding', 'onboarding', 'bare', { auth: true }],
     ['app', 'app', 'app', { auth: true }], ['app/:tab', 'app', 'app', { auth: true }],

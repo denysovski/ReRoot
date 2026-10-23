@@ -581,3 +581,15 @@ svg.year rect.fut{fill:none;stroke:var(--faint);stroke-width:1}
 }
 /* the collapsed panel also gives back the grid gap, so removing it afterwards moves nothing */
 .wk-block{display:block;min-width:0}
+/* app corner buttons: a soft light keeps orbiting the border, so they read as clickable */
+@property --corb{syntax:'<angle>';inherits:false;initial-value:0deg}
+.corner{isolation:isolate}
+.corner::before{content:"";position:absolute;inset:-2px;border-radius:inherit;padding:2px;pointer-events:none;z-index:-1;
+  background:conic-gradient(from var(--corb),transparent 0deg,transparent 230deg,var(--fg) 320deg,transparent 360deg);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);
+  filter:drop-shadow(0 0 4px color-mix(in srgb,var(--fg) 70%,transparent));animation:cornerOrb 3.6s linear infinite}
+.corner-r::before{animation-delay:-1.8s}
+.corner::after{content:"";position:absolute;inset:-6px;border-radius:inherit;pointer-events:none;z-index:-2;box-shadow:0 0 18px 2px color-mix(in srgb,var(--fg) 14%,transparent);animation:cornerGlow 3.6s ease-in-out infinite}
+@keyframes cornerOrb{to{--corb:360deg}}
+@keyframes cornerGlow{50%{box-shadow:0 0 24px 4px color-mix(in srgb,var(--fg) 22%,transparent)}}
+@media (prefers-reduced-motion: reduce){.corner::before,.corner::after{animation:none}}
