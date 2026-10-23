@@ -79,6 +79,28 @@
     try { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('reroot:' + s)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join(''); }
     catch (e) { let h = 0; for (const c of s) h = (h * 31 + c.charCodeAt(0)) | 0; return 'x' + h; }
   }
+  // passwords: PBKDF2-SHA256 with a random per-account salt (older SHA-256 hashes are upgraded on the next login)
+  const hex = b => [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
+  const ITER = 210000;
+  async function pbkdf2(pw, salt, iter = ITER) {
+    const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveBits']);
+    const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: new TextEncoder().encode(salt), iterations: iter }, key, 256);
+    return `pbkdf2$${iter}$${salt}$${hex(bits)}`;
+  }
+  async function makeHash(pw) { try { return await pbkdf2(pw, hex(crypto.getRandomValues(new Uint8Array(16)))); } catch (e) { return hash(pw); } }
+  async function verify(stored, pw) {
+    if (typeof stored !== 'string') return false;
+    if (stored.startsWith('pbkdf2$')) { const [, it, salt] = stored.split('$'); try { return safeEq(await pbkdf2(pw, salt, +it), stored); } catch (e) { return false; } }
+    return safeEq(await hash(pw), stored);
+  }
+  const safeEq = (a, b) => { if (a.length !== b.length) return false; let d = 0; for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i); return d === 0; };
+  // repeated wrong passwords: short, growing lockout per email
+  const THR = 'reroot.throttle';
+  const throttle = {
+    left(email) { const t = ls.get(THR, {})[email]; return t && t.until > Date.now() ? Math.ceil((t.until - Date.now()) / 1000) : 0; },
+    fail(email) { const all = ls.get(THR, {}), t = all[email] || { n: 0, until: 0 }; t.n++; if (t.n >= 5) t.until = Date.now() + Math.min(300, 30 * 2 ** (t.n - 5)) * 1000; all[email] = t; ls.set(THR, all); },
+    clear(email) { const all = ls.get(THR, {}); delete all[email]; ls.set(THR, all); }
+  };
   const tzGuess = () => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch (e) { return 'UTC'; } };
   const auth = {
     users() { return ls.get('reroot.users', {}); },
@@ -87,23 +109,25 @@
       if (remember) ls.set('reroot.session', email); else try { sessionStorage.setItem('reroot.session', JSON.stringify(email)); } catch (x) { ls.set('reroot.session', email); } },
     current() { const e = this.session(); return e ? this.users()[e] || null : null; },
     async register({ email, password, confirm, remember = true }) {
-      email = (email || '').trim().toLowerCase();
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: 'Enter an email address like name@example.com.', field: 'email' };
+      email = (email || '').trim().toLowerCase().slice(0, 254); password = String(password || '').slice(0, 128);
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || /[<>"'`]/.test(email)) return { error: 'Enter an email address like name@example.com.', field: 'email' };
       if ((password || '').length < 6) return { error: 'Use at least 6 characters for your password.', field: 'password' };
       if (confirm !== undefined && confirm !== password) return { error: 'The passwords don\'t match. Type the same password twice.', field: 'confirm' };
       const users = this.users();
       if (users[email]) return { error: 'An account with this email already exists. Log in instead.', field: 'email' };
       const base = email.split('@')[0].replace(/[._\-+\d]+/g, ' ').trim() || 'friend';
       const name = base.split(' ')[0].replace(/^./, c => c.toUpperCase());
-      users[email] = { name, email, pass: await hash(password), created: Date.now(), prefs: { tz: tzGuess(), notif: false, reminder: '20:00', onboarded: false } };
+      users[email] = { name, email, pass: await makeHash(password), created: Date.now(), prefs: { tz: tzGuess(), notif: false, reminder: '20:00', onboarded: false } };
       ls.set('reroot.users', users); this.startSession(email, remember);
       return { user: users[email] };
     },
     async login({ email, password, remember = true }) {
-      email = (email || '').trim().toLowerCase();
-      const u = this.users()[email];
-      if (!u) return { error: 'No account uses this email. Check the spelling or create an account.', field: 'email' };
-      if (u.pass !== await hash(password || '')) return { error: 'That password doesn\'t match. Try again.', field: 'password' };
+      email = (email || '').trim().toLowerCase().slice(0, 254); password = String(password || '').slice(0, 128);
+      const wait = throttle.left(email); if (wait) return { error: `Too many attempts. Try again in ${wait} seconds.`, field: 'password' };
+      const users = this.users(), u = users[email];
+      if (!u || !(await verify(u.pass, password))) { throttle.fail(email); return { error: 'That email and password don\'t match. Check them and try again.', field: 'password' }; }
+      throttle.clear(email);
+      if (!String(u.pass).startsWith('pbkdf2$')) { u.pass = await makeHash(password); users[email] = u; ls.set('reroot.users', users); }
       this.startSession(email, remember); return { user: u };
     },
     logout() { ls.del('reroot.session'); try { sessionStorage.removeItem('reroot.session'); } catch (x) {} },

@@ -22,6 +22,21 @@
     return { view: '404', layout: 'site', opt: {}, params: {} };
   }
 
+  // keep title, description, canonical and social tags in sync with the route (search engines render the SPA)
+  const SITE = 'https://denysovski.github.io/ReRoot/';
+  function meta(sel, attr, val) { let el = document.head.querySelector(sel); if (!el) { el = document.createElement(sel.startsWith('link') ? 'link' : 'meta'); const [, k, v] = sel.match(/\[(\w+(?::\w+)?)="([^"]+)"\]/) || []; k && el.setAttribute(k, v); document.head.appendChild(el); } el.setAttribute(attr, val); }
+  function setMeta(m, V, u) {
+    let title = V.title ? `${V.title} · Re:Root` : 'Re:Root · Quit bad habits with daily check-ins', desc = V.desc || '';
+    if (m.view === 'article') { const a = (window.RR_ARTICLES || []).find(x => x.id === m.params.id); if (a) { title = `${a.t} · Re:Root`; desc = a.d; } }
+    const path = rel(u.pathname), url = SITE + path + (path ? '/' : ''), priv = m.opt.auth || m.opt.guest && m.view === 'login' || m.view === '404';
+    document.title = title;
+    meta('meta[name="description"]', 'content', desc);
+    meta('link[rel="canonical"]', 'href', url);
+    meta('meta[property="og:title"]', 'content', title); meta('meta[property="og:description"]', 'content', desc); meta('meta[property="og:url"]', 'content', url);
+    meta('meta[name="twitter:title"]', 'content', title); meta('meta[name="twitter:description"]', 'content', desc);
+    meta('meta[name="robots"]', 'content', priv ? 'noindex,nofollow' : 'index,follow,max-image-preview:large');
+  }
+
   let cur = { layout: null, ctrl: null, app: null };
   const fade = new Spring(1, { eps: .001 }); let fadeEl = null;
   fade.on(p => { if (!fadeEl) return; fadeEl.style.opacity = p; fadeEl.style.transform = p >= 1 ? '' : `translateY(${(1 - p) * 16}px)`; fadeEl.style.filter = p >= .999 || motion.reduce ? '' : `blur(${(1 - p) * 8}px)`; });
@@ -33,7 +48,7 @@
     if (m.opt.guest && user) return navigate(user.prefs.onboarded ? 'app/today' : 'onboarding', { replace: true });
     if (m.view === 'app' && !user.prefs.onboarded) return navigate('onboarding', { replace: true });
     const V = window.RR_VIEWS[m.view];
-    document.title = V.title ? `${V.title} · Re:Root` : 'Re:Root · Take control of your habits';
+    setMeta(m, V, u);
 
     if (m.layout === 'app' && cur.layout === 'app' && cur.app) { cur.app.go(m.params.tab || 'home', { fromRouter: true }); return; }
     if (cur.ctrl) cur.ctrl.abort();

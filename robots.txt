@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /ReRoot/app/
+Disallow: /ReRoot/onboarding/
+Disallow: /app/
+Disallow: /onboarding/
+
+Sitemap: https://denysovski.github.io/ReRoot/sitemap.xml

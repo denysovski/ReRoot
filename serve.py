@@ -10,6 +10,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *a, **k):
         super().__init__(*a, directory=ROOT, **k)
 
+    # same security headers a production host should send (see _headers and SECURITY.md)
+    def end_headers(self):
+        for k, v in [('X-Content-Type-Options', 'nosniff'), ('X-Frame-Options', 'DENY'), ('Referrer-Policy', 'strict-origin-when-cross-origin'),
+                     ('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=()'), ('Cross-Origin-Opener-Policy', 'same-origin')]:
+            self.send_header(k, v)
+        super().end_headers()
+
     def send_head(self):
         path = self.translate_path(self.path.split('?')[0])
         if os.path.isdir(path) and os.path.exists(os.path.join(path, 'index.html')) or os.path.isfile(path):

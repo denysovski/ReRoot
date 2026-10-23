@@ -1,0 +1,10 @@
+# Security headers for hosts that read this file (Netlify, Cloudflare Pages).
+# GitHub Pages ignores it; there the same Content-Security-Policy is applied through a <meta> tag in every page.
+/*
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()
+  Cross-Origin-Opener-Policy: same-origin
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-0IYlf0fFttJ/67pZy1K/v03v6+3+lSBMkzsw1M4aUCI=' 'sha256-ZZmE9O7uGbZvkJhqbRwl7+mGmy5D6szFHjXG//iJjc4='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self'; worker-src 'self' blob:; manifest-src 'self'; media-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'

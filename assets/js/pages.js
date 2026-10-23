@@ -138,7 +138,10 @@
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(m)) return showErr('#c-err', 'Enter a valid email address, like name@example.com.');
         if (!sub) return showErr('#c-err', 'Add a subject so we know what this is about.');
         if (!t) return showErr('#c-err', 'Write a message before sending.');
-        $('#c-err').hidden = true; const all = ls.get('reroot.messages', []); all.push({ n, m, sub, src: v('#c-source'), t, at: Date.now() }); ls.set('reroot.messages', all);
+        if (n.length > 80 || m.length > 254 || sub.length > 140 || t.length > 4000) return showErr('#c-err', 'That is a bit long. Keep the message under 4,000 characters.');
+        const last = ls.get('reroot.lastMsg', 0); if (Date.now() - last < 30000) return showErr('#c-err', 'You just sent a message. Wait half a minute before sending another.');
+        ls.set('reroot.lastMsg', Date.now());
+        $('#c-err').hidden = true; const all = ls.get('reroot.messages', []).slice(-49); all.push({ n, m, sub, src: v('#c-source'), t, at: Date.now() }); ls.set('reroot.messages', all);
         e.target.reset(); toast('Thanks, your message was saved. This demo does not send email.'); });
     },
     login(root, params, signal) {
