@@ -94,7 +94,7 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
       inp.value = `${h ? h.dataset.v : '20'}:${m ? m.dataset.v : '00'}`; if (ul.dataset.col === 'm') openDD(dd, false); }
     else { inp.value = li.dataset.v; openDD(dd, false); }
     $('.dd-v', dd).textContent = dd.classList.contains('dd-time') ? inp.value : li.textContent;
-    inp.dispatchEvent(new Event('change'));
+    inp.dispatchEvent(new Event('change', { bubbles: true }));
   }, { signal, capture: true });
   document.addEventListener('input', e => { if (!e.target.matches('.dd-q')) return; const q = e.target.value.trim().toLowerCase(); $$('li', e.target.closest('.dd')).forEach(li => li.hidden = !!q && !li.textContent.toLowerCase().includes(q)); }, { signal });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') $$('.dd.open').forEach(d => openDD(d, false)); }, { signal });
@@ -171,7 +171,7 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
     else { removeEventListener('wheel', blockScroll); removeEventListener('touchmove', blockScroll); RR.lenis && RR.lenis.start(); RR.lenis ? RR.lenis.scrollTo(0, { immediate: true, force: true }) : scrollTo(0, 0); }
   }
   function paintSlide(p) {
-    const W = innerWidth * .9;
+    const W = innerWidth + 24;
     if (incoming) incoming.style.transform = p >= 1 ? '' : `translate3d(${(slideDir * (1 - p) * W).toFixed(2)}px,0,0)`;
     if (p >= 1) lockScroll(false);
     if (outgoing) { if (p >= 1) resetOut(); else outgoing.style.transform = `translate3d(${(-slideDir * p * W).toFixed(2)}px,0,0)`; }
@@ -216,7 +216,9 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
   const RANGES = [[7, '7 days'], [30, '1 month'], [90, '3 months'], [180, '6 months'], [270, '9 months'], [365, '1 year'], ['all', 'All time']];
   const ord = n => n + (n % 100 > 10 && n % 100 < 14 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th');
   const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
-  const rangeSeg = (act, cur) => `<div class="seg rng" role="group" aria-label="Time range"><span class="thumb" aria-hidden="true"></span>${RANGES.map(([v, l]) => `<button data-act="${act}" data-r="${v}" aria-pressed="${v === cur}">${l}</button>`).join('')}</div>`;
+  const rangeSeg = (act, cur) => `<div class="seg rng" role="group" aria-label="Time range"><span class="thumb" aria-hidden="true"></span>${RANGES.map(([v, l]) => `<button data-act="${act}" data-r="${v}" aria-pressed="${v === cur}">${l}</button>`).join('')}</div>
+    <div class="dd rng-m" data-dd><button type="button" class="dd-btn" aria-haspopup="listbox" aria-expanded="false" aria-label="Time range"><svg class="rf-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg><span class="rf-lab">Period</span><span class="dd-v">${RANGES.find(x => x[0] === cur)[1]}</span>${CHEV}</button>
+      <div class="dd-pop"><div class="dd-in"><ul class="dd-list" role="listbox" data-lenis-prevent>${RANGES.map(([v, l]) => `<li role="option" data-v="${v}" aria-selected="${v === cur}">${l}</li>`).join('')}</ul></div></div><input type="hidden" class="rng-in" data-act="${act}" value="${cur}"></div>`;
   // the white thumb slides to the chosen range
   function placeThumb(seg, anim) {
     const b = $('[aria-pressed="true"]', seg), t = $('.thumb', seg); if (!b || !t) return;
@@ -233,6 +235,13 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
     clearTimeout(blurT[sel]); el.classList.add('blurred');
     blurT[sel] = setTimeout(() => { render(); blurT[sel] = setTimeout(() => { const e = $(sel); e && e.classList.remove('blurred'); }, 60); }, 280);
   }
+  // phone filter menu → same action as the segmented control
+  document.addEventListener('change', e => {
+    const inp = e.target; if (!inp.classList || !inp.classList.contains('rng-in')) return;
+    const v = inp.value === 'all' ? 'all' : +inp.value, seg = inp.closest('.hfilters').querySelector('.seg.rng'), btn = seg && seg.querySelector(`[data-r="${inp.value}"]`);
+    btn && pressIn(seg, btn);
+    if (inp.dataset.act === 'hrange') { homeRange = v; blurSwap('#home-dyn', () => renderHome(true)); } else { progRange = v; blurSwap('#prog-dyn', () => renderProgress(true)); }
+  }, { signal });
   function pressIn(group, btn) { $$('[aria-pressed]', group).forEach(x => x.setAttribute('aria-pressed', x === btn)); const seg = btn.closest('.seg.rng'); seg && placeThumb(seg, true); }
   /* ---------- home streak chart: the line climbs day by day, drops at each slip; the peak before a reset is labelled ---------- */
   function streakChart(h, n) {
@@ -375,8 +384,8 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
       return `<div class="wd"><button class="dot ${cls} ${k === tk ? 'today' : ''} ${dayPop && dayPop.h === h.id && dayPop.k === k ? 'sel' : ''}" data-press data-act="daypick" data-h="${h.id}" data-k="${k}" ${before ? 'disabled style="opacity:.3"' : ''} aria-label="${fmt(d, { weekday: 'long', month: 'short', day: 'numeric' })}: ${cls === 'c' ? 'clean' : cls === 'x' ? 'slipped' : 'not logged'}"></button>${fmt(d, { weekday: 'narrow' })}</div>`; }).join('');
     return `<article class="glass card hc">
       <div class="hc-top"><div style="min-width:0"><button class="hc-name" data-act="toprog" data-h="${h.id}" title="Open progress">${esc(h.name)}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button><div class="hc-meta">${n} of ${h.goal} days${nm ? ` · next milestone ${nm}` : ''}</div></div>${ringSVG(h.id, clamp(n / h.goal), n)}</div>
-      <div class="week">${week}</div>
-      ${dayPop && dayPop.h === h.id ? (() => { const g = getLog(h.id, dayPop.k) || {}; return `<div class="dpwrap ${dpAnim === h.id ? '' : 'open'}" data-dp="${h.id}"><div><div class="daypop"><span>${fmt(fromKey(dayPop.k), { weekday: 'long', month: 'short', day: 'numeric' })}</span><div class="dp-btns"><button data-act="setday" data-h="${h.id}" data-k="${dayPop.k}" data-s="c" aria-pressed="${g.s === 'c'}">Stayed clean</button><button data-act="setday" data-h="${h.id}" data-k="${dayPop.k}" data-s="x" aria-pressed="${g.s === 'x'}">Slipped</button><button data-act="setday" data-h="${h.id}" data-k="${dayPop.k}" data-s="" class="dp-clear">Clear</button></div></div></div></div>`; })() : ''}
+      <div class="wk-block"><div class="week">${week}</div>
+      ${dayPop && dayPop.h === h.id ? (() => { const g = getLog(h.id, dayPop.k) || {}; return `<div class="dpwrap ${dpAnim === h.id ? '' : 'open'}" data-dp="${h.id}"><div><div class="daypop"><span>${fmt(fromKey(dayPop.k), { weekday: 'long', month: 'short', day: 'numeric' })}</span><div class="dp-btns"><button data-act="setday" data-h="${h.id}" data-k="${dayPop.k}" data-s="c" aria-pressed="${g.s === 'c'}">Stayed clean</button><button data-act="setday" data-h="${h.id}" data-k="${dayPop.k}" data-s="x" aria-pressed="${g.s === 'x'}">Slipped</button><button data-act="setday" data-h="${h.id}" data-k="${dayPop.k}" data-s="" class="dp-clear">Clear</button></div></div></div></div>`; })() : ''}</div>
       <div class="choice"><button data-press data-act="clean" data-h="${h.id}" aria-pressed="${l.s === 'c'}">Stayed clean</button><button data-press data-act="slip" data-h="${h.id}" aria-pressed="${l.s === 'x'}">Slipped</button></div>
       <div class="urge"><div class="urge-lab"><span>Urge strength today</span></div><div class="seg" role="group" aria-label="Urge strength">${[0, 1, 2, 3, 4, 5].map(u => `<button data-press data-act="urge" data-h="${h.id}" data-u="${u}" aria-pressed="${l.u === u}">${u}</button>`).join('')}</div></div>
       <div class="slipwrap ${l.s === 'x' && slipAnim !== h.id ? 'open' : ''}" data-slip="${h.id}"><div><p class="slipnote">A slip is information, not a verdict. Your earlier clean days still count. <button data-act="article" data-a="slip">What to do next</button></p></div></div>
@@ -389,7 +398,7 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
     return `<section class="glass card note diary"><div class="chart-h"><h3>Your diary</h3><button class="dhist" data-act="diary-history" aria-label="Diary history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg><span>History</span></button></div>
       <p class="vsub">How did today feel? How did you handle your habits, and did any urges come up? Write as much or as little as you like. It's optional.</p>
       <textarea id="note-today" placeholder="Today I…">${esc(cur)}</textarea>
-      <div class="actions-row"><button class="btn btn-primary btn-sm" data-press data-act="diary-save" id="diary-save" ${cur ? 'disabled' : ''}>${cur ? 'Saved' : 'Save my diary'}</button><small class="muted">Stays private in this browser.</small></div></section>`;
+      <div class="actions-row"><button class="btn btn-primary btn-sm" data-press data-act="diary-save" id="diary-save" ${cur ? 'disabled' : ''}>${cur ? 'Saved' : 'Save my diary'}</button></div></section>`;
   }
   // every day since you started, newest first: days with an entry open to the full text, empty days are listed but not clickable
   function diaryHistoryHTML() {
@@ -411,7 +420,10 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
     clearTimeout(dpT); const w = dayPop && $(`[data-dp="${dayPop.h}"]`);
     if (!w || motion.reduce) { dayPop = null; after && after(); renderToday(); return; }
     const card = w.closest('.hc') || w.parentElement, week = $('.week', card), sel = $('.dot.sel', card), today = $('.dot.today', card);
-    w.classList.remove('open');
+    // collapse with an explicit height (and give back the grid gap) so nothing moves when the panel is removed
+    w.style.overflow = 'hidden'; w.style.height = w.offsetHeight + 'px'; w.offsetHeight;
+    w.style.transition = 'height .45s cubic-bezier(.25,1,.35,1), margin-top .45s cubic-bezier(.25,1,.35,1), opacity .3s ease';
+    w.style.height = '0px'; w.style.opacity = '0';
     if (week && sel) {
       sel.classList.remove('sel');
       if (today && today !== sel) {

@@ -1476,3 +1476,6 @@ a.logo-pill:hover{transform:scale(1.04)}
 /* the countries panel sits over the animated globe: no backdrop blur (it would be recomputed every frame) */
 .gcountries{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;background:color-mix(in srgb,var(--surface) 94%,transparent)!important}
 html:not(.ready) .swap .sw-0,html:not(.ready) .swap .sw-1,html:not(.ready) .swap .sw-2,html:not(.ready) .swap .sw-q{animation-play-state:paused}
+/* hero proximity letters */
+.vp-w{display:inline-block;white-space:nowrap}
+.vp-l{display:inline-block;font-variation-settings:'wght' 600}

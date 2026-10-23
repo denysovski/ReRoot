@@ -254,8 +254,32 @@
       addEventListener('scroll', g, { passive: true, signal }); g(); }
   }
 
+  /* hero title: letters get heavier as the cursor comes near (variable font weight, like React Bits "Variable Proximity") */
+  function proximity(root, signal) {
+    const h = $('[data-prox]', root); if (!h || motion.reduce || !matchMedia('(hover:hover) and (pointer:fine)').matches) return;
+    const FROM = 600, TO = 800, RADIUS = 170;
+    $$('.nw', h).forEach(line => { const words = line.textContent.split(' ');
+      line.innerHTML = words.map(w => `<span class="vp-w">${[...w].map(c => `<span class="vp-l" aria-hidden="true">${c}</span>`).join('')}</span>`).join(' '); });
+    const L = $$('.vp-l', h).map(el => ({ el, w: FROM, t: FROM }));
+    let mx = -1e4, my = -1e4, raf = 0;
+    const tick = () => {
+      let moving = false;
+      L.forEach(o => { const r = o.el.getBoundingClientRect(), d = Math.hypot(mx - (r.left + r.width / 2), my - (r.top + r.height / 2));
+        const f = Math.max(0, 1 - d / RADIUS); o.t = FROM + (TO - FROM) * f * f * (3 - 2 * f);
+        o.w += (o.t - o.w) * .22; if (Math.abs(o.t - o.w) > .4) moving = true; else o.w = o.t;
+        o.el.style.fontVariationSettings = `'wght' ${o.w.toFixed(1)}`; });
+      raf = moving ? requestAnimationFrame(tick) : 0;
+    };
+    const kick = () => { if (!raf) raf = requestAnimationFrame(tick); };
+    addEventListener('pointermove', e => { mx = e.clientX; my = e.clientY; kick(); }, { passive: true, signal });
+    document.addEventListener('pointerleave', () => { mx = my = -1e4; kick(); }, { signal });
+    addEventListener('scroll', kick, { passive: true, signal });
+    signal.addEventListener('abort', () => cancelAnimationFrame(raf));
+  }
+
   function enhance(root, signal) {
     thread(root, signal);
+    proximity(root, signal);
     letterSwap(root, signal);
     inchworm(root, signal);
     heroOrb(root, signal);
