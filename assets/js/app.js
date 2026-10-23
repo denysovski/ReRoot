@@ -233,17 +233,53 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
     clearTimeout(blurT[sel]); blurT[sel] = setTimeout(() => { const e = $(sel); if (!e) return; e.classList.add('unblur'); e.classList.remove('blurred'); }, 300);
   }
   function pressIn(group, btn) { $$('[aria-pressed]', group).forEach(x => x.setAttribute('aria-pressed', x === btn)); const seg = btn.closest('.seg.rng'); seg && placeThumb(seg, true); }
-  // consistency over the last 14 days: a calm, encouraging card under Today
-  function consistCard(H) {
-    const N = 14, days = Array.from({ length: N }, (_, i) => { const k = key(addDays(now(), i - (N - 1))); const any = H.some(h => k >= h.start && (getLog(h.id, k) || {}).s); return { k, any, today: i === N - 1 }; });
-    const n = days.filter(d => d.any).length, pct = Math.round(n / N * 100);
-    const msg = n >= 12 ? 'You show up almost every day. That is exactly how habits change.' : n >= 7 ? 'Consistency beats intensity. Keep showing up, one day at a time.' : 'Every check-in counts. Come back tomorrow and the pattern starts to build.';
-    return `<section class="glass card consist"><div class="cs-glow" aria-hidden="true"></div>
-      <p class="eyebrow">Consistency</p><h3>Staying consistent is what gets you there.</h3><p class="cs-msg">${msg}</p>
-      <div class="cs-row"><div class="cs-days" aria-label="Checked in on ${n} of the last ${N} days">${days.map((d, i) => `<i class="${d.any ? 'on' : ''} ${d.today ? 'td' : ''}" style="--i:${i}"></i>`).join('')}</div>
-      <div class="cs-n"><b data-count="${pct}">0</b><span>%</span></div></div>
-      <small class="cs-foot">Checked in on ${n} of the last ${N} days</small></section>`;
+  /* ---------- insights: four rotating cards under Today ---------- */
+  let insT = 0, insI = 0;
+  const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
+  function windowStats(h, from, to) { let c = 0, x = 0, us = 0, un = 0;
+    for (let i = from; i < to; i++) { const k = key(addDays(now(), -i)); if (k < h.start) continue; const l = getLog(h.id, k); if (!l) continue; if (l.s === 'c') c++; if (l.s === 'x') x++; if (l.u != null) { us += l.u; un++; } }
+    return { c, x, n: c + x, rate: pct(c, c + x), urge: un ? us / un : null }; }
+  function insightsCard(H) {
+    const slides = [];
+    // 1. consistency
+    const N = 14, days = Array.from({ length: N }, (_, i) => { const k = key(addDays(now(), i - (N - 1))); return { any: H.some(h => k >= h.start && (getLog(h.id, k) || {}).s), today: i === N - 1 }; });
+    const n = days.filter(d => d.any).length;
+    slides.push({ eb: 'Consistency', h: 'Staying consistent is what gets you there.', m: n >= 12 ? 'You show up almost every day. That is exactly how habits change.' : n >= 7 ? 'Consistency beats intensity. Keep showing up, one day at a time.' : 'Every check-in counts. Come back tomorrow and the pattern starts to build.',
+      viz: `<div class="cs-row"><div class="cs-days">${days.map((d, i) => `<i class="${d.any ? 'on' : ''} ${d.today ? 'td' : ''}" style="--i:${i}"></i>`).join('')}</div><div class="cs-n"><b data-count="${pct(n, N)}">0</b><span>%</span></div></div><small class="cs-foot">Checked in on ${n} of the last ${N} days</small>` });
+    // 2. most improved habit: clean rate, last 30 days vs the 30 before
+    const imp = H.map(h => ({ h, a: windowStats(h, 30, 60), b: windowStats(h, 0, 30) })).filter(o => o.b.n).map(o => ({ ...o, d: o.b.rate - (o.a.n ? o.a.rate : 0) })).sort((p, q) => q.d - p.d)[0];
+    if (imp) { const up = imp.d > 0;
+      slides.push({ eb: 'Most improved', h: up ? `${esc(imp.h.name)} is going better than ever.` : `${esc(imp.h.name)} is holding steady.`, m: up ? `Your clean rate rose by ${imp.d} points compared with the month before. Whatever you changed is working.` : 'No big jump this month, and that is fine. Steady days add up to real change.',
+        viz: `<div class="ins-bars"><div><span>Month before</span><i style="--w:${imp.a.n ? imp.a.rate : 0}%"></i><b>${imp.a.n ? imp.a.rate + '%' : '–'}</b></div><div class="now"><span>Last 30 days</span><i style="--w:${imp.b.rate}%"></i><b>${imp.b.rate}%</b></div></div>` }); }
+    // 3. how often you slip
+    let sl = 0, sd = 0; const strip = Array.from({ length: 30 }, (_, i) => { const k = key(addDays(now(), i - 29)); const x = H.some(h => (getLog(h.id, k) || {}).s === 'x'); return x; });
+    H.forEach(h => { const w = windowStats(h, 0, 30); sl += w.x; sd += w.n; });
+    const every = sl ? Math.max(1, Math.round(sd / sl)) : 0;
+    slides.push({ eb: 'Slips', h: sl ? `About one slip every ${every} day${every === 1 ? '' : 's'}.` : 'No slips in the last 30 days.', m: sl ? 'Slips are part of the process. Spotting how often they happen helps you see the gaps getting longer.' : 'A whole month without a slip. Remember what helped and keep it close.',
+      viz: `<div class="ins-strip">${strip.map((x, i) => `<i class="${x ? 'x' : ''}" style="--i:${i}"></i>`).join('')}</div><small class="cs-foot">Last 30 days · ${sl} slip${sl === 1 ? '' : 's'} logged</small>` });
+    // 4. urges getting weaker?
+    let ua = [], ub = []; H.forEach(h => { const a = windowStats(h, 14, 28), b = windowStats(h, 0, 14); a.urge != null && ua.push(a.urge); b.urge != null && ub.push(b.urge); });
+    const avg = v => v.length ? v.reduce((p, q) => p + q, 0) / v.length : null, A = avg(ua), Bv = avg(ub);
+    if (Bv != null) { const down = A != null && Bv < A - .05;
+      slides.push({ eb: 'Urges', h: down ? 'Your urges are getting weaker.' : A != null && Bv > A + .05 ? 'Urges were stronger lately.' : 'Your urges are steady.', m: down ? 'The average urge over the last two weeks dropped. Each time you ride one out, the next one gets easier.' : 'Stronger weeks happen. Look at when they hit and plan one small thing for those moments.',
+        viz: `<div class="ins-urge"><div><small>2 weeks before</small><b>${A == null ? '–' : A.toFixed(1)}</b></div><span class="arr ${down ? 'down' : ''}">→</span><div class="now"><small>Last 2 weeks</small><b>${Bv.toFixed(1)}</b></div><em>average urge, 0–5</em></div>` }); }
+    insI = insI % slides.length;
+    return `<section class="glass card insights" data-ins style="--dur:7s"><div class="cs-glow" aria-hidden="true"></div>
+      <div class="ins-track">${slides.map((sd, k) => `<div class="ins-slide ${k === insI ? 'on' : ''}" aria-hidden="${k !== insI}"><p class="eyebrow">${sd.eb}</p><h3>${sd.h}</h3><p class="cs-msg">${sd.m}</p><div class="ins-viz">${sd.viz}</div></div>`).join('')}</div>
+      <div class="ins-dots" role="tablist">${slides.map((sd, k) => `<button role="tab" aria-label="${sd.eb}" aria-selected="${k === insI}" data-act="ins" data-k="${k}"><i></i></button>`).join('')}</div></section>`;
   }
+  function insShow(k) {
+    const box = $('[data-ins]'); if (!box) return; const sl = $$('.ins-slide', box), dots = $$('.ins-dots button', box); insI = (k + sl.length) % sl.length;
+    sl.forEach((e, j) => { e.classList.toggle('on', j === insI); e.setAttribute('aria-hidden', j !== insI); });
+    dots.forEach((d, j) => { d.setAttribute('aria-selected', j === insI); const i = $('i', d); i.style.animation = 'none'; i.offsetWidth; i.style.animation = ''; });
+    const cnt = $('.ins-slide.on [data-count]', box); cnt && countUp(cnt, +cnt.dataset.count);
+  }
+  // the fill of the active dot is the timer: when it finishes, the next card slides in (hovering pauses it)
+  function insStart() {
+    const box = $('[data-ins]'); if (!box || motion.reduce) return;
+    box.addEventListener('animationend', e => { if (e.animationName === 'insFill' && e.target.closest('[aria-selected="true"]')) insShow(insI + 1); });
+  }
+
   function renderHome(soft) {
     const r = $('#home-root'), tk = todayKey(), ALL = S.habits, n0 = now();
     if (!ALL.length) { r.innerHTML = `<header class="vhead"><h1 class="vtitle">${greet()}, ${esc(user.name)}.</h1></header>${exampleBanner()}${emptyState()}`; return; }
@@ -284,7 +320,7 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
           <div class="actions-row"><button class="btn btn-primary" data-press data-nav="today">${done === ALL.length ? 'Review habits' : 'Check in for today'}</button><button class="btn-text" data-act="toprog" data-h="${best.id}">See your progress</button></div></div></section>
         <div class="dash-side"><section class="glass card"><div class="chart-h"><h3>Today</h3><small>${done} of ${ALL.length} checked in</small></div><div class="status-list">${ALL.map(h => { const l = getLog(h.id, tk) || {};
           return `<div class="status"><span>${esc(h.name)}</span>${l.s ? `<button class="ci-done" data-nav="today" data-tip="${l.s === 'c' ? 'You stayed clean today' : 'You logged a slip today'}">${CHECK}Checked in</button>` : `<button class="btn btn-primary btn-sm" data-press data-nav="today">Check in</button>`}</div>`; }).join('')}</div></section>
-        ${consistCard(H)}</div>
+        ${insightsCard(H)}</div>
       </div>
       <div class="stats" style="margin-top:14px">
         <div class="glass card stat"><b data-count="${ALL.length}">0</b><span>Habits you're quitting</span></div>
@@ -299,6 +335,7 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
           <div class="slip-bottom"><div class="wdbars">${wbars}</div><p class="vsub hardday">${Math.max(...wd) ? `Your hardest day is <b>${['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][hard]}</b>. Plan something for it.` : 'No slips in this period.'}</p></div></section>
       </div>`;
     const hn = $('#home-n'); hn && countUp(hn, bn);
+    insStart();
     $$('[data-count]', r).forEach(el => countUp(el, +el.dataset.count));
     const arc = $('.goal-ring .arc', r); requestAnimationFrame(() => requestAnimationFrame(() => arc && (arc.style.strokeDashoffset = arc.dataset.to)));
     const bs = $$('.anim-bar', r), ws = $$('.anim-wd', r);
@@ -610,6 +647,7 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
         if (!dayPop || dayPop.h !== id) dpAnim = id; dayPop = { h: id, k }; renderToday(); break; }
       case 'setday': { const k = b.dataset.k, sv = b.dataset.s; setLog(id, k, { s: sv || undefined }); buzz(); renderToday(); setTimeout(() => closeDayPop(), 260); if (sv === 'c') toast('Logged as clean'); break; }
       case 'toprog': S.sel = id; save(); gearOpen = null; $$('.gear-wrap.open').forEach(w => w.classList.remove('open')); go('progress'); break;
+      case 'ins': insShow(+b.dataset.k); break;
       case 'hpick': homeHabit = id; pressIn(b.parentElement, b); blurSwap('#home-dyn', () => renderHome(true)); break;
       case 'hrange': homeRange = b.dataset.r === 'all' ? 'all' : +b.dataset.r; pressIn(b.parentElement, b); blurSwap('#home-dyn', () => renderHome(true)); break;
       case 'cycle': { const k = b.dataset.k, cur = (getLog(id, k) || {}).s; setLog(id, k, { s: cur === 'c' ? 'x' : cur === 'x' ? undefined : 'c' }); buzz(); renderToday(); break; }
