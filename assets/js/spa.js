@@ -1,6 +1,7 @@
 /* Re:Root router — one page, clean URLs (/about, /articles/urge, /app/today), works on GitHub Pages via 404.html. */
 (function () {
   const { $, auth, motion, Spring, closeAll } = RR;
+  try { history.scrollRestoration = 'manual'; } catch (e) {}   // the router handles scroll itself; avoids a jump after F5
   const BASE = new URL(document.baseURI).pathname;          // "/" locally, "/ReRoot/" on GitHub Pages
   const ROUTES = [
     ['', 'home', 'site'], ['how-it-works', 'how', 'site'], ['showcase', 'showcase', 'site'], ['community', 'community', 'site'],
