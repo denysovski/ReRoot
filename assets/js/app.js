@@ -160,7 +160,7 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
   const viewP = new Spring(1, { eps: .001 }); let incoming = null;
   // tabs slide like pages: the old view leaves to one side while the new one comes in from the other
   let outgoing = null, slideDir = 1;
-  const resetOut = () => { if (!outgoing) return; outgoing.hidden = true; Object.assign(outgoing.style, { position: '', top: '', left: '', right: '', transform: '' }); outgoing = null; };
+  const resetOut = () => { if (!outgoing) return; outgoing.hidden = true; Object.assign(outgoing.style, { position: '', top: '', left: '', right: '', transform: '', height: '', overflow: '' }); outgoing = null; };
   // time-based slide with a long, soft ease-out so it settles without a jolt at the end
   let slideRaf = 0;
   const easeOut = t => 1 - Math.pow(1 - t, 5);
@@ -196,7 +196,8 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
     if (changed) {
       RR.lenis ? RR.lenis.scrollTo(0, { immediate: true, force: true }) : window.scrollTo(0, 0);
       if (slide) { const main = $('.app-main'); outgoing = prevEl;
-        Object.assign(outgoing.style, { position: 'absolute', left: '0', right: '0', top: (scr - main.getBoundingClientRect().top) + 'px' });
+        const topPx = scr - main.getBoundingClientRect().top;
+        Object.assign(outgoing.style, { position: 'absolute', left: '0', right: '0', top: topPx + 'px', height: Math.max(0, innerHeight - scr) + 'px', overflow: 'hidden' });
         runSlide(); }
       else { cancelAnimationFrame(slideRaf); paintSlide(1); }
     }
@@ -331,7 +332,8 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
     const size = Math.ceil(n / 60), groups = []; for (let i = 0; i < n; i += size) { const g = days.slice(i, i + size); groups.push({ c: g.reduce((a, o) => a + o.c, 0), m: g.reduce((a, o) => a + o.m, 0), x: g.reduce((a, o) => a + o.x, 0) }); }
     const W = 300, Hh = 110, bw = W / Math.max(groups.length, 1);
     const bars = groups.map((g, i) => { const f = g.m ? g.c / g.m : 0, hgt = Math.max(2, f * (Hh - 10)); return `<rect class="anim-bar ${g.x ? 'sl' : ''}" x="${i * bw + Math.min(1.5, bw * .15)}" y="${Hh - hgt}" width="${Math.max(1, bw - Math.min(3, bw * .3))}" height="${hgt}" rx="2"/>`; }).join('');
-    const wbars = wd.map((v, i) => `<div class="wdb ${i === hard && v ? 'hard' : ''}"><i class="anim-wd" style="--h:${v / wmax * 100}%"></i><span>${WD[i]}</span></div>`).join('');
+    const top = Math.max(...wd);
+    const wbars = wd.map((v, i) => `<div class="wdb ${v && v === top ? 'hard' : ''}"><div class="wdcol"><b class="wdn">${v}</b><i class="anim-wd" style="--h:${v / wmax * 100}%"></i></div><span>${WD[i]}</span></div>`).join('');
     const strip = Array.from({ length: 30 }, (_, i) => { const l = getLog(best.id, key(addDays(n0, i - 29))); return `<i class="${l && l.s ? l.s : ''}"></i>`; }).join('');
     const done = ALL.filter(h => (getLog(h.id, tk) || {}).s).length, gp = clamp(bn / best.goal), GC = 2 * Math.PI * 44;
     $('#home-dyn', r).innerHTML = `
@@ -354,7 +356,8 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
         <section class="glass card chart"><div class="chart-h"><h3>Your streak</h3><small>${esc(best.name)}</small></div>${streakChart(best, Math.max(7, n))}
           <div class="legend"><span><i class="c"></i>Days in a row</span><span><i class="sl dot"></i>Slip, streak resets</span></div></section>
         <section class="glass card chart slipcard"><div class="chart-h"><h3>When slips happen</h3><span class="info-i" tabindex="0" role="button" aria-label="Why log slips"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg><span class="info-pop" role="tooltip">Log slips honestly too. They show your real pattern, so you can plan for the hard days.</span></span></div>
-          <div class="slip-bottom"><div class="wdbars">${wbars}</div><p class="vsub hardday">${Math.max(...wd) ? `Your hardest day is <b>${['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][hard]}</b>. Plan something for it.` : 'No slips in this period.'}</p></div></section>
+          ${top ? `<div class="slip-bottom"><div class="wdbars">${wbars}</div><p class="vsub hardday">Your hardest day is <b>${['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][hard]}</b>. Plan something for it.</p></div>`
+            : `<div class="noslip"><span class="ns-ic">${CHECK}</span><b>You're on a good path.</b><span>No slips in this period. Keep going.</span></div>`}</section>
       </div>`;
     const hn = $('#home-n'); hn && countUp(hn, bn);
     insStart();
@@ -382,22 +385,50 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
   /* ---------- diary: one optional entry per day, saved on demand, earlier days can be read back ---------- */
   let diaryOpen = null, diaryAll = false;
   function diaryHTML(tk) {
-    const cur = S.notes[tk] || '', past = Object.keys(S.notes).filter(k => k !== tk && (S.notes[k] || '').trim()).sort().reverse(), shown = diaryAll ? past : past.slice(0, 5);
-    return `<section class="glass card note diary"><div class="chart-h"><h3>Your diary</h3><small>${fmt(fromKey(tk), { weekday: 'long', month: 'long', day: 'numeric' })}</small></div>
+    const cur = S.notes[tk] || '';
+    return `<section class="glass card note diary"><div class="chart-h"><h3>Your diary</h3><button class="dhist" data-act="diary-history" aria-label="Diary history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg><span>History</span></button></div>
       <p class="vsub">How did today feel? How did you handle your habits, and did any urges come up? Write as much or as little as you like. It's optional.</p>
       <textarea id="note-today" placeholder="Today I…">${esc(cur)}</textarea>
-      <div class="actions-row"><button class="btn btn-primary btn-sm" data-press data-act="diary-save" id="diary-save" ${cur ? 'disabled' : ''}>${cur ? 'Saved' : 'Save my diary'}</button><small class="muted">Stays private in this browser.</small></div>
-      ${past.length ? `<div class="diary-past"><h4>Earlier entries</h4>${shown.map(k => `<div class="dentry ${diaryOpen === k ? 'open' : ''}"><button class="dentry-h" data-act="diary-open" data-k="${k}"><span>${fmt(fromKey(k), { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })}</span><em>${esc(S.notes[k].trim().slice(0, 70))}${S.notes[k].trim().length > 70 ? '…' : ''}</em></button><div class="dentry-b"><div><p>${esc(S.notes[k]).replace(/\n/g, '<br>')}</p></div></div></div>`).join('')}
-        ${past.length > 5 && !diaryAll ? `<button class="btn-text" data-act="diary-all">Show all ${past.length} entries</button>` : ''}</div>` : ''}</section>`;
+      <div class="actions-row"><button class="btn btn-primary btn-sm" data-press data-act="diary-save" id="diary-save" ${cur ? 'disabled' : ''}>${cur ? 'Saved' : 'Save my diary'}</button><small class="muted">Stays private in this browser.</small></div></section>`;
+  }
+  // every day since you started, newest first: days with an entry open to the full text, empty days are listed but not clickable
+  function diaryHistoryHTML() {
+    const tk = todayKey(), starts = S.habits.map(h => h.start).concat(Object.keys(S.notes)).filter(Boolean).sort(), first = starts[0] && starts[0] < tk ? starts[0] : tk;
+    const n = Math.min(400, Math.round((fromKey(tk) - fromKey(first)) / 864e5) + 1), T = S.noteTimes || {};
+    const rows = Array.from({ length: n }, (_, i) => { const k = key(addDays(now(), -i)), txt = (S.notes[k] || '').trim(), d = fromKey(k);
+      const date = fmt(d, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+      if (!txt) return `<div class="dh-row empty"><span class="dh-date">${date}</span><em>No entry</em></div>`;
+      const at = T[k] ? new Date(T[k]) : null;
+      return `<div class="dh-row dentry"><button class="dentry-h" data-act="diary-open" data-k="${k}"><span class="dh-date">${date}</span><em>${esc(txt.slice(0, 80))}${txt.length > 80 ? '…' : ''}</em></button>
+        <div class="dentry-b"><div><p>${esc(S.notes[k]).replace(/\n/g, '<br>')}</p><small class="dh-meta">${at ? `Written on ${fmt(at, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })} at ${at.toTimeString().slice(0, 5)}` : `Entry for ${date}`}</small></div></div></div>`; });
+    const count = rows.filter(r => !r.includes('dh-row empty')).length;
+    return `<p class="vsub" style="margin-bottom:14px">${count} ${count === 1 ? 'entry' : 'entries'} in ${n} day${n === 1 ? '' : 's'}. Tap a day with an entry to read it.</p><div class="dh-list" data-lenis-prevent>${rows.join('')}</div>`;
   }
   let slipAnim = null, dayPop = null, justKey = null, dpAnim = null, dpT = 0;
   // close the past-day panel with the same soft collapse it opened with, then redraw
-  function closeDayPop(after) { clearTimeout(dpT); const w = dayPop && $(`[data-dp="${dayPop.h}"]`); if (!w || motion.reduce) { dayPop = null; after && after(); renderToday(); return; }
-    w.classList.remove('open'); dpT = setTimeout(() => { const hid = dayPop.h; dayPop = null; after && after(); renderToday(); const t = $(`.dot.today[data-h="${hid}"]`); if (t) { t.focus({ preventScroll: true }); t.classList.add('back'); } }, 430); }
+  // close the past-day panel softly; the focus ring glides from the edited day back to today, then fades
+  function closeDayPop(after) {
+    clearTimeout(dpT); const w = dayPop && $(`[data-dp="${dayPop.h}"]`);
+    if (!w || motion.reduce) { dayPop = null; after && after(); renderToday(); return; }
+    const card = w.closest('.hc') || w.parentElement, week = $('.week', card), sel = $('.dot.sel', card), today = $('.dot.today', card);
+    w.classList.remove('open');
+    if (week && sel) {
+      sel.classList.remove('sel');
+      if (today && today !== sel) {
+        const wr = week.getBoundingClientRect(), box = el => { const r = el.getBoundingClientRect(); return { x: r.left - wr.left - 5, y: r.top - wr.top - 5, w: r.width + 10, h: r.height + 10 }; };
+        const a = box(sel), b = box(today), ring = document.createElement('span'); ring.className = 'wk-ring'; week.appendChild(ring);
+        Object.assign(ring.style, { width: a.w + 'px', height: a.h + 'px', transform: `translate(${a.x}px,${a.y}px)` }); ring.offsetWidth;
+        ring.classList.add('go'); ring.style.transform = `translate(${b.x}px,${b.y}px)`;
+        setTimeout(() => { ring.classList.add('out'); today.classList.add('back'); today.focus({ preventScroll: true }); }, 620);
+        setTimeout(() => ring.remove(), 1200);
+      }
+    }
+    dpT = setTimeout(() => { w.remove(); dayPop = null; after && after(); }, 450);
+  }
   function renderToday() {
     const r = $('#today-root'), tk = todayKey(), done = S.habits.filter(h => (getLog(h.id, tk) || {}).s).length;
     r.innerHTML = `<header class="vhead"><p class="eyebrow">${fmt(now(), { weekday: 'long', month: 'long', day: 'numeric' })}</p><h1 class="vtitle">Today</h1>
-      <p class="vsub">${S.habits.length ? `<span class="ci-pill ${done === S.habits.length ? 'all' : ''}"><b>${done}</b> of ${S.habits.length} checked in</span> Tap a day in the week row to log the last 7 days.` : 'Nothing tracked yet.'}</p></header>
+      <p class="vsub">${S.habits.length ? `<span class="ci-pill ${done === S.habits.length ? 'all' : ''}"><b>${done}</b> of ${S.habits.length} checked in</span><span class="tip-pill">Tap a day in the week row to log the last 7 days.</span>` : 'Nothing tracked yet.'}</p></header>
       ${exampleBanner()}
       ${S.habits.length ? `<div class="cards">${S.habits.map(habitCard).join('')}<button class="addcard" data-press data-act="add">+ Add a habit</button></div>
       ${diaryHTML(tk)}` : emptyState()}`;
@@ -689,7 +720,8 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
       case 'setday': { const k = b.dataset.k, sv = b.dataset.s; setLog(id, k, { s: sv || undefined }); buzz(); renderToday(); setTimeout(() => closeDayPop(), 260); if (sv === 'c') toast('Logged as clean'); break; }
       case 'toprog': S.sel = id; save(); gearOpen = null; $$('.gear-wrap.open').forEach(w => w.classList.remove('open')); go('progress'); break;
       case 'ins': insShow(+b.dataset.k); break;
-      case 'diary-save': { const ta = $('#note-today'); if (!ta) break; const v = ta.value.trim(); if (v) S.notes[tk] = ta.value; else delete S.notes[tk]; save(); b.textContent = 'Saved'; b.disabled = true; toast(v ? 'Diary saved' : 'Entry removed'); break; }
+      case 'diary-history': openSheet('Diary history', diaryHistoryHTML(), 'wide'); break;
+      case 'diary-save': { const ta = $('#note-today'); if (!ta) break; const v = ta.value.trim(); S.noteTimes = S.noteTimes || {}; if (v) { S.notes[tk] = ta.value; S.noteTimes[tk] = Date.now(); } else { delete S.notes[tk]; delete S.noteTimes[tk]; } save(); b.textContent = 'Saved'; b.disabled = true; toast(v ? 'Diary saved' : 'Entry removed'); break; }
       case 'diary-open': { const k = b.dataset.k, e = b.closest('.dentry'), on = !e.classList.contains('open'); $$('.dentry.open').forEach(x => x !== e && x.classList.remove('open')); e.classList.toggle('open', on); diaryOpen = on ? k : null; break; }
       case 'diary-all': diaryAll = true; renderToday(); break;
       case 'hpick': homeHabit = id; pressIn(b.parentElement, b); blurSwap('#home-dyn', () => renderHome(true)); break;
