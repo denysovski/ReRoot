@@ -33,7 +33,7 @@
       const L = isLight(), R = Math.min(W, H) * .44;
       proj.scale(R).translate([W / 2, H / 2]).rotate(rot);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0); const pad = R * 1.75; ctx.clearRect(Math.max(0, W / 2 - pad), Math.max(0, H / 2 - pad), pad * 2, pad * 2);
-      ctx.beginPath(); path(sphere); ctx.fillStyle = 'rgba(243,243,245,.15)'; ctx.fill();   // ocean: the title colour, faded right down; white land with dark borders
+      ctx.beginPath(); path(sphere); ctx.fillStyle = '#2b2b2e'; ctx.fill();   // solid dark grey ocean (both themes); white land with dark borders
       ctx.beginPath(); path(grat); ctx.strokeStyle = 'rgba(255,255,255,.07)'; ctx.lineWidth = .7; ctx.stroke();
       if (world) {
         ctx.beginPath(); path(world.solid); ctx.fillStyle = '#f4f4f5'; ctx.fill();
