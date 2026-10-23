@@ -33,14 +33,14 @@
       const L = isLight(), R = Math.min(W, H) * .44;
       proj.scale(R).translate([W / 2, H / 2]).rotate(rot);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0); const pad = R * 1.75; ctx.clearRect(Math.max(0, W / 2 - pad), Math.max(0, H / 2 - pad), pad * 2, pad * 2);
-      ctx.beginPath(); path(sphere); ctx.fillStyle = L ? '#e4e4e8' : '#101012'; ctx.fill();
-      ctx.beginPath(); path(grat); ctx.strokeStyle = L ? 'rgba(0,0,0,.06)' : 'rgba(255,255,255,.05)'; ctx.lineWidth = .7; ctx.stroke();
+      ctx.beginPath(); path(sphere); ctx.fillStyle = '#000000'; ctx.fill();   // black ocean, white land, crisp black borders (both themes)
+      ctx.beginPath(); path(grat); ctx.strokeStyle = 'rgba(255,255,255,.07)'; ctx.lineWidth = .7; ctx.stroke();
       if (world) {
-        ctx.beginPath(); path(world.solid); ctx.fillStyle = L ? '#ffffff' : '#2a2a2e'; ctx.fill();
-        ctx.beginPath(); path(world.borders); ctx.strokeStyle = L ? 'rgba(0,0,0,.22)' : 'rgba(255,255,255,.22)'; ctx.lineWidth = .6; ctx.stroke();
+        ctx.beginPath(); path(world.solid); ctx.fillStyle = '#f4f4f5'; ctx.fill();
+        ctx.beginPath(); path(world.borders); ctx.strokeStyle = 'rgba(0,0,0,.78)'; ctx.lineWidth = .9; ctx.stroke();
       }
       ctx.beginPath(); path(sphere); ctx.strokeStyle = L ? 'rgba(0,0,0,.18)' : 'rgba(255,255,255,.18)'; ctx.lineWidth = 1; ctx.stroke();
-      const dl = rot[0] * Math.PI / 180, dp = rot[1] * Math.PI / 180, cdp = Math.cos(dp), sdp = Math.sin(dp), cx = W / 2, cy = H / 2, base = Math.max(5, R / 42), img = L ? SPR.l : SPR.d;
+      const dl = rot[0] * Math.PI / 180, dp = rot[1] * Math.PI / 180, cdp = Math.cos(dp), sdp = Math.sin(dp), cx = W / 2, cy = H / 2, base = Math.max(5, R / 42), img = SPR.l;
       for (let k = 0; k < V.length; k++) {
         const d = V[k], lo = d[5] + dl, x = d[4] * Math.cos(lo), y = d[4] * Math.sin(lo), z = d[3], vis = x * cdp - z * sdp; if (vis <= .04) continue;
         const kz = z * cdp + x * sdp, sz = base * (.55 + d[2] * .75); ctx.globalAlpha = Math.min(1, vis * 1.5) * (.3 + .7 * d[2]);
@@ -68,11 +68,11 @@
         placed.forEach(b => {
           const dk = clamp((b.dist - .35) / .9), ax = clamp(b.pt[0], b.x + 12, b.x + b.w - 12), ay = clamp(b.pt[1], b.y + 6, b.y + b.h - 6),
             cy = b.pt[1] < b.y ? b.y : b.pt[1] > b.y + b.h ? b.y + b.h : ay, cx = b.pt[1] >= b.y && b.pt[1] <= b.y + b.h ? (b.pt[0] < b.x ? b.x : b.x + b.w) : ax;
-          ctx.globalAlpha = b.a; ctx.strokeStyle = L ? 'rgba(80,50,255,.8)' : 'rgba(190,170,255,.85)'; ctx.beginPath(); ctx.moveTo(b.pt[0], b.pt[1]); ctx.lineTo(cx, cy); ctx.stroke();
+          ctx.globalAlpha = b.a; ctx.strokeStyle = 'rgba(92,60,255,.9)'; ctx.beginPath(); ctx.moveTo(b.pt[0], b.pt[1]); ctx.lineTo(cx, cy); ctx.stroke();
           ctx.fillStyle = '#7c5cff'; ctx.beginPath(); ctx.arc(b.pt[0], b.pt[1], 4.5, 0, 7); ctx.fill(); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(b.pt[0], b.pt[1], 1.8, 0, 7); ctx.fill();
-          const v = L ? Math.round(15 + dk * 70) : Math.round(255 - dk * 95);
-          ctx.fillStyle = `rgb(${v},${v},${L ? v + 3 : v})`; ctx.beginPath(); ctx.roundRect(b.x, b.y, b.w, b.h, 13); ctx.fill();
-          ctx.fillStyle = L ? '#fff' : '#0b0b0c'; ctx.fillText(b.name, b.x + 10, b.y + 13.5);
+          const v = Math.round(14 + dk * 62);
+          ctx.fillStyle = `rgb(${v},${v},${v + 2})`; ctx.beginPath(); ctx.roundRect(b.x, b.y, b.w, b.h, 13); ctx.fill();
+          ctx.strokeStyle = 'rgba(255,255,255,.28)'; ctx.lineWidth = 1; ctx.stroke(); ctx.lineWidth = 1.2; ctx.fillStyle = '#fff'; ctx.fillText(b.name, b.x + 10, b.y + 13.5);
         }); ctx.globalAlpha = 1;
       }
     };

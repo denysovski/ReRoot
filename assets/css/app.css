@@ -593,3 +593,16 @@ svg.year rect.fut{fill:none;stroke:var(--faint);stroke-width:1}
 @keyframes cornerOrb{to{--corb:360deg}}
 @keyframes cornerGlow{50%{box-shadow:0 0 24px 4px color-mix(in srgb,var(--fg) 22%,transparent)}}
 @media (prefers-reduced-motion: reduce){.corner::before,.corner::after{animation:none}}
+/* phone period menu opens over the content, crisp edges */
+@media (max-width:700px){
+  .rng-m{position:relative;z-index:30}
+  .rng-m .dd-pop{position:absolute;left:0;right:0;top:calc(100% + 6px)}
+  .rng-m .dd-list{-webkit-mask:none;mask:none;max-height:none;margin:0;background:var(--surface);box-shadow:0 0 0 1px var(--line),0 24px 50px -20px rgba(0,0,0,.6)}
+}
+/* diary box keeps its size */
+.diary textarea{resize:none}
+/* year calendar: a plain thin line as the horizontal scrollbar */
+.year-wrap{overflow-x:auto;scrollbar-width:thin;scrollbar-color:var(--fg) var(--line);padding-bottom:12px}
+.year-wrap::-webkit-scrollbar{height:3px}
+.year-wrap::-webkit-scrollbar-track{background:var(--line);border-radius:3px}
+.year-wrap::-webkit-scrollbar-thumb{background:var(--fg);border-radius:3px}

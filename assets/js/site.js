@@ -277,9 +277,53 @@
     signal.addEventListener('abort', () => cancelAnimationFrame(raf));
   }
 
+  /* "Shiny text" (port of React Bits ShinyText): a soft band of light sweeps across the title in a loop,
+     and while the pointer is over it the band follows the cursor. The scattered letters of "break" get the same band, offset to their position. */
+  function shiny(root, signal) {
+    const h = $('[data-shiny]', root); if (!h) return;
+    const kids = $$('.broken > span', h);
+    h.classList.add('shiny-text'); kids.forEach(k => k.classList.add('shiny-text'));
+    const reduce = motion.reduce, SPEED = 2.2, DELAY = 1.1, WIDTH = 26, ease = t => .5 - Math.cos(Math.PI * t) / 2;
+    const colors = () => theme.isDark() ? ['rgba(181,181,181,1)', 'rgba(255,255,255,1)'] : ['rgba(120,120,124,1)', 'rgba(10,10,10,1)'];
+    let [base, hi] = colors();
+    const grad = (pos, w) => { const c = w * .25, f = w / 2;   // soft edges, bright core
+      return `linear-gradient(90deg, ${base} 0%, ${base} ${pos - f}%, ${hi} ${pos - c}%, ${hi} ${pos + c}%, ${base} ${pos + f}%, ${base} 100%)`; };
+    const draw = pos => {
+      if (pos == null) { h.style.backgroundImage = `linear-gradient(${base}, ${base})`; kids.forEach(k => k.style.backgroundImage = h.style.backgroundImage); return; }
+      const R = h.getBoundingClientRect(), px = R.left + pos / 100 * R.width, wpx = WIDTH / 100 * R.width;
+      h.style.backgroundImage = grad(pos, WIDTH);
+      kids.forEach(k => { const r = k.getBoundingClientRect(); k.style.backgroundImage = grad((px - r.left) / r.width * 100, wpx / r.width * 100); });
+    };
+    const ext = WIDTH / 2 + 2, from = -ext, to = 100 + ext;
+    let st = { pos: null, phase: 'wait', t0: performance.now() + 700, inside: false, target: 50, vel: 0 }, raf = 0, last = 0;
+    const tick = now => {
+      raf = 0; const dt = Math.min(.05, Math.max(0, (now - (last || now)) / 1000)); last = now;
+      if (st.inside) {   // follow the pointer with a light spring
+        if (st.pos == null) st.pos = st.target < 50 ? from : to;
+        st.vel += ((st.target - st.pos) * 220 - st.vel * 2 * Math.sqrt(220)) * dt; st.pos += st.vel * dt; draw(st.pos);
+        raf = requestAnimationFrame(tick); return;
+      }
+      if (st.phase === 'follow') { st.phase = 'sweep'; st.a = st.pos; st.b = st.pos < 50 ? from : to; st.t0 = now; st.dur = SPEED * 500; }
+      if (st.phase === 'wait') { if (now < st.t0) { raf = requestAnimationFrame(tick); return; } st.phase = 'sweep'; st.a = from; st.b = to; st.t0 = now; st.dur = SPEED * 1000; }
+      if (st.phase === 'sweep') {
+        const t = Math.min(1, (now - st.t0) / st.dur); st.pos = st.a + (st.b - st.a) * ease(t); draw(st.pos);
+        if (t >= 1) { st.phase = 'wait'; st.t0 = now + DELAY * 1000; st.pos = null; draw(null); }
+      }
+      if (!reduce) raf = requestAnimationFrame(tick);
+    };
+    const loc = e => { const r = h.getBoundingClientRect(); return (e.clientX - r.left) / r.width * 100; };
+    h.addEventListener('pointerenter', e => { st.inside = true; st.target = loc(e); st.phase = 'follow'; if (!raf) raf = requestAnimationFrame(tick); }, { signal });
+    h.addEventListener('pointermove', e => { st.target = loc(e); }, { signal });
+    h.addEventListener('pointerleave', () => { st.inside = false; st.vel = 0; if (!raf) raf = requestAnimationFrame(tick); }, { signal });
+    document.addEventListener('rr:theme', () => { [base, hi] = colors(); draw(st.pos); }, { signal });
+    draw(null); if (!reduce) raf = requestAnimationFrame(tick);
+    signal.addEventListener('abort', () => cancelAnimationFrame(raf));
+  }
+
   function enhance(root, signal) {
     thread(root, signal);
     proximity(root, signal);
+    shiny(root, signal);
     letterSwap(root, signal);
     inchworm(root, signal);
     heroOrb(root, signal);

@@ -1479,13 +1479,6 @@ html:not(.ready) .swap .sw-0,html:not(.ready) .swap .sw-1,html:not(.ready) .swap
 /* hero proximity letters */
 .vp-w{display:inline-block;white-space:nowrap}
 .vp-l{display:inline-block;font-variation-settings:'wght' 600}
-/* About: shiny title (a light streak sweeps across the text) */
-.shiny,.shiny .broken>span{background-image:linear-gradient(110deg,var(--shine-base) 0%,var(--shine-base) 40%,var(--shine-hi) 50%,var(--shine-base) 60%,var(--shine-base) 100%);
-  background-size:220% 100%;background-attachment:scroll;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;animation:shine 4.5s linear infinite}
-.shiny{--shine-base:color-mix(in srgb,var(--fg) 62%,transparent);--shine-hi:var(--fg)}
-@keyframes shine{from{background-position:120% 0}to{background-position:-120% 0}}
-.shiny .broken>span{animation:shine 4.5s linear infinite,shatter .7s cubic-bezier(.2,1.4,.4,1) .5s backwards}
-@media (prefers-reduced-motion: reduce){.shiny,.shiny .broken>span{animation:none}}
 /* team: role as a white pill under the name */
 .m-role{display:inline-flex;align-items:center;height:30px;padding:0 14px;margin:10px 0 4px;border-radius:999px;background:var(--fg);color:var(--bg);font-size:13px;font-weight:600;letter-spacing:.01em}
 .m-role{justify-self:start;width:fit-content}
@@ -1501,3 +1494,31 @@ html:not(.ready) .swap .sw-0,html:not(.ready) .swap .sw-1,html:not(.ready) .swap
 .legal-alert b{font-size:16px}
 .legal-alert p{margin:.3em 0 0;color:inherit;opacity:.85}
 .legal-nav a{text-decoration:none!important}
+
+/* About: shiny title, driven by site.js (React Bits ShinyText port) */
+.shiny-text{background-repeat:no-repeat;background-size:100% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+/* home pill: the dot sits exactly in the middle at any zoom level */
+.pill-note i{position:relative;display:block;width:22px;height:22px;flex:none}
+.pill-note i::after{position:absolute;inset:0;margin:auto;width:6px;height:6px}
+/* community: a field of dots instead of avatars, each dot = 500 people */
+.crowd{display:grid;gap:16px;justify-items:start}
+.cdots{display:grid;grid-template-columns:repeat(25,9px);gap:6px}
+.cdots i{width:9px;height:9px;border-radius:50%;background:var(--fg);opacity:0;transform:scale(.2)}
+.crowd.go .cdots i{animation:cdIn .6s cubic-bezier(.3,1.4,.5,1) forwards;animation-delay:calc(.2s + var(--i) * 28ms)}
+.crowd.go .cdots i:nth-child(7n+3){animation:cdIn .6s cubic-bezier(.3,1.4,.5,1) forwards,cdTw 3.2s ease-in-out 2.4s infinite;animation-delay:calc(.2s + var(--i) * 28ms),calc(2.4s + var(--i) * 90ms)}
+@keyframes cdIn{to{opacity:.9;transform:none}}
+@keyframes cdTw{0%,100%{opacity:.9}50%{opacity:.25}}
+.crowd p{display:grid;gap:2px}
+.crowd small{font-size:13px;color:var(--muted)}
+@media (max-width:520px){.cdots{grid-template-columns:repeat(25,7px);gap:4px}.cdots i{width:7px;height:7px}}
+@media (prefers-reduced-motion: reduce){.cdots i{opacity:.9;transform:none}.crowd.go .cdots i{animation:none}}
+/* About: soft colour glow on the left of "What we believe" */
+.believe{position:relative}
+.believe > :not(.believe-orb){position:relative;z-index:1}
+.believe-orb{position:absolute;left:-12%;top:50%;width:min(700px,80vw);height:440px;translate:0 -50%;pointer-events:none;z-index:0;filter:blur(80px);opacity:.42}
+.believe-orb i{position:absolute;border-radius:50%;mix-blend-mode:screen;animation:orbA 9s ease-in-out infinite alternate}
+.believe-orb i:nth-child(1){left:6%;top:12%;width:55%;height:78%;background:#6d5dfc}
+.believe-orb i:nth-child(2){left:32%;top:2%;width:50%;height:80%;background:#22c3ee;animation-name:orbB;animation-duration:11s}
+.believe-orb i:nth-child(3){left:20%;top:26%;width:48%;height:72%;background:#f472b6;animation-name:orbC;animation-duration:13s}
+:root[data-theme="light"] .believe-orb{opacity:.3}:root[data-theme="light"] .believe-orb i{mix-blend-mode:multiply}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]) .believe-orb{opacity:.3}:root:not([data-theme="dark"]) .believe-orb i{mix-blend-mode:multiply}}
