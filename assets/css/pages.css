@@ -1531,3 +1531,4 @@ html:not(.ready) .swap .sw-0,html:not(.ready) .swap .sw-1,html:not(.ready) .swap
 .stories .st-row-wrap{overflow-x:clip;overflow-y:visible;padding-block:200px;margin-block:-200px}
 @media (max-width:700px){.stories .st-row-wrap{padding-block:110px;margin-block:-110px}}
 .stories .st-rows{gap:clamp(36px,5vw,80px)}
+.stories .st-rows{gap:clamp(8px,1vw,14px);padding-top:clamp(0px,.7vw,10px)}
