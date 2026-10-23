@@ -289,12 +289,12 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
     insI = insI % slides.length;
     return `<section class="glass card insights" data-ins style="--dur:7s"><div class="cs-glow" aria-hidden="true"></div>
       <div class="ins-track">${slides.map((sd, k) => `<div class="ins-slide ${k === insI ? 'on' : ''}" aria-hidden="${k !== insI}"><p class="eyebrow">${sd.eb}</p><h3>${sd.h}</h3><p class="cs-msg">${sd.m}</p><div class="ins-viz">${sd.viz}</div></div>`).join('')}</div>
-      <div class="ins-dots" role="tablist">${slides.map((sd, k) => `<button role="tab" aria-label="${sd.eb}" aria-selected="${k === insI}" data-act="ins" data-k="${k}"><i></i></button>`).join('')}</div></section>`;
+      <div class="ins-dots" role="tablist">${slides.map((sd, k) => `<button role="tab" class="${k < insI ? 'done' : ''}" aria-label="${sd.eb}" aria-selected="${k === insI}" data-act="ins" data-k="${k}"><i></i></button>`).join('')}</div></section>`;
   }
   function insShow(k) {
     const box = $('[data-ins]'); if (!box) return; const sl = $$('.ins-slide', box), dots = $$('.ins-dots button', box); insI = (k + sl.length) % sl.length;
     sl.forEach((e, j) => { e.classList.toggle('on', j === insI); e.setAttribute('aria-hidden', j !== insI); });
-    dots.forEach((d, j) => { d.setAttribute('aria-selected', j === insI); const i = $('i', d); i.style.animation = 'none'; i.offsetWidth; i.style.animation = ''; });
+    dots.forEach((d, j) => { d.setAttribute('aria-selected', j === insI); d.classList.toggle('done', j < insI); const i = $('i', d); i.style.animation = 'none'; i.offsetWidth; i.style.animation = ''; });
     const cnt = $('.ins-slide.on [data-count]', box); cnt && countUp(cnt, +cnt.dataset.count);
   }
   // the fill of the active dot is the timer: when it finishes, the next card slides in (hovering pauses it)

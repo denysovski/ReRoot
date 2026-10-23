@@ -514,3 +514,13 @@ svg.year rect.fut{fill:none;stroke:var(--faint);stroke-width:1}
 @keyframes breatheOrb{0%{transform:scale(.55);animation-timing-function:cubic-bezier(.45,0,.55,1)}28.571%{transform:scale(1);animation-timing-function:linear}57.143%{transform:scale(1);animation-timing-function:cubic-bezier(.45,0,.55,1)}100%{transform:scale(.55)}}
 .orb.breathing{animation:breatheOrb 14s infinite}
 .orb{backface-visibility:hidden;transform:translateZ(0) scale(.55)}
+/* insights timer: small circles top-right; finished slides stay filled, the current one fills up */
+@property --ip{syntax:'<angle>';inherits:false;initial-value:0deg}
+.insights .ins-dots{position:absolute;top:clamp(18px,2vw,24px);right:clamp(18px,2vw,24px);margin:0;gap:7px;z-index:2}
+.insights .ins-dots button{flex:none;width:12px;height:12px;max-width:none;border-radius:50%;background:none;box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--fg) 38%,transparent);overflow:hidden;cursor:pointer;transition:box-shadow .3s}
+.insights .ins-dots button:hover{box-shadow:inset 0 0 0 1.5px var(--fg)}
+.insights .ins-dots button i{width:100%;height:100%;border-radius:50%;transform:none;background:conic-gradient(var(--fg) var(--ip),transparent 0);--ip:0deg}
+.insights .ins-dots button.done i{--ip:360deg}
+.insights .ins-dots button[aria-selected="true"] i{animation:insFill var(--dur,7s) linear forwards}
+@keyframes insFill{from{--ip:0deg}to{--ip:360deg}}
+.insights .ins-slide .eyebrow{padding-right:90px}
