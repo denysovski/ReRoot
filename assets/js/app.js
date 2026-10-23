@@ -164,15 +164,22 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
   // time-based slide with a long, soft ease-out so it settles without a jolt at the end
   let slideRaf = 0;
   const easeOut = t => 1 - Math.pow(1 - t, 5);
+  const blockScroll = e => e.preventDefault(); let locked = false;
+  function lockScroll(on) {
+    if (on === locked) return; locked = on;
+    if (on) { RR.lenis && RR.lenis.stop(); addEventListener('wheel', blockScroll, { passive: false }); addEventListener('touchmove', blockScroll, { passive: false }); }
+    else { removeEventListener('wheel', blockScroll); removeEventListener('touchmove', blockScroll); RR.lenis && RR.lenis.start(); RR.lenis ? RR.lenis.scrollTo(0, { immediate: true, force: true }) : scrollTo(0, 0); }
+  }
   function paintSlide(p) {
     const W = innerWidth * .9;
     if (incoming) incoming.style.transform = p >= 1 ? '' : `translate3d(${(slideDir * (1 - p) * W).toFixed(2)}px,0,0)`;
+    if (p >= 1) lockScroll(false);
     if (outgoing) { if (p >= 1) resetOut(); else outgoing.style.transform = `translate3d(${(-slideDir * p * W).toFixed(2)}px,0,0)`; }
   }
   function runSlide() {
     cancelAnimationFrame(slideRaf); const t0 = performance.now(), D = 820;
     const step = n => { const t = Math.min(1, Math.max(0, (n - t0) / D)); paintSlide(t >= 1 ? 1 : easeOut(t)); if (t < 1) slideRaf = requestAnimationFrame(step); };
-    paintSlide(0); slideRaf = requestAnimationFrame(step);
+    lockScroll(true); paintSlide(0); slideRaf = requestAnimationFrame(step);
   }
   const RENDER = { home: renderHome, today: renderToday, progress: renderProgress, goals: renderGoals, read: renderRead };
   function go(v, { instant, fromRouter } = {}) {
@@ -218,7 +225,25 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
   }
   const daysSince = start => Math.max(1, Math.round((fromKey(todayKey()) - fromKey(start)) / 864e5) + 1);
   addEventListener('resize', () => $$('.app-main .seg.rng').forEach(sg => placeThumb(sg, false)), { signal });
+  // filter change: the cards blur, the new numbers land underneath, then everything comes back into focus
+  const blurT = {};
+  function blurSwap(sel, render) {
+    const el = $(sel); if (!el || motion.reduce) { render(); return; }
+    el.classList.remove('unblur'); el.classList.add('blurred'); render();
+    clearTimeout(blurT[sel]); blurT[sel] = setTimeout(() => { const e = $(sel); if (!e) return; e.classList.add('unblur'); e.classList.remove('blurred'); }, 300);
+  }
   function pressIn(group, btn) { $$('[aria-pressed]', group).forEach(x => x.setAttribute('aria-pressed', x === btn)); const seg = btn.closest('.seg.rng'); seg && placeThumb(seg, true); }
+  // consistency over the last 14 days: a calm, encouraging card under Today
+  function consistCard(H) {
+    const N = 14, days = Array.from({ length: N }, (_, i) => { const k = key(addDays(now(), i - (N - 1))); const any = H.some(h => k >= h.start && (getLog(h.id, k) || {}).s); return { k, any, today: i === N - 1 }; });
+    const n = days.filter(d => d.any).length, pct = Math.round(n / N * 100);
+    const msg = n >= 12 ? 'You show up almost every day. That is exactly how habits change.' : n >= 7 ? 'Consistency beats intensity. Keep showing up, one day at a time.' : 'Every check-in counts. Come back tomorrow and the pattern starts to build.';
+    return `<section class="glass card consist"><div class="cs-glow" aria-hidden="true"></div>
+      <p class="eyebrow">Consistency</p><h3>Staying consistent is what gets you there.</h3><p class="cs-msg">${msg}</p>
+      <div class="cs-row"><div class="cs-days" aria-label="Checked in on ${n} of the last ${N} days">${days.map((d, i) => `<i class="${d.any ? 'on' : ''} ${d.today ? 'td' : ''}" style="--i:${i}"></i>`).join('')}</div>
+      <div class="cs-n"><b data-count="${pct}">0</b><span>%</span></div></div>
+      <small class="cs-foot">Checked in on ${n} of the last ${N} days</small></section>`;
+  }
   function renderHome(soft) {
     const r = $('#home-root'), tk = todayKey(), ALL = S.habits, n0 = now();
     if (!ALL.length) { r.innerHTML = `<header class="vhead"><h1 class="vtitle">${greet()}, ${esc(user.name)}.</h1></header>${exampleBanner()}${emptyState()}`; return; }
@@ -254,11 +279,12 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
       <div class="dash">
         <section class="glass dash-hero">
           <div class="goal-ring" aria-label="${bn} of ${best.goal} days toward the goal"><svg viewBox="0 0 100 100"><circle class="trk" cx="50" cy="50" r="44"/><circle class="arc" cx="50" cy="50" r="44" stroke-dasharray="${GC}" stroke-dashoffset="${GC}" data-to="${GC * (1 - gp)}"/></svg><span><b>${best.goal}</b>days</span></div>
-          <div><p class="eyebrow">${homeHabit === 'all' ? 'Longest current run' : 'Current run'}</p><div class="big-n" style="margin-top:14px"><b id="home-n">0</b><span>days</span></div><p class="hero-from">clean from ${esc(best.name.toLowerCase())}</p></div>
+          <div><p class="eyebrow">${homeHabit === 'all' ? 'Longest current run' : 'Current run'}</p><div class="big-n" style="margin-top:14px"><b id="home-n">0</b><span>days</span></div><p class="hero-from">Clean from ${esc(best.name.toLowerCase())}</p></div>
           <div class="hero-bottom"><div class="strip" aria-label="Last 30 days">${strip}</div>
           <div class="actions-row"><button class="btn btn-primary" data-press data-nav="today">${done === ALL.length ? 'Review habits' : 'Check in for today'}</button><button class="btn-text" data-act="toprog" data-h="${best.id}">See your progress</button></div></div></section>
-        <section class="glass card"><div class="chart-h"><h3>Today</h3><small>${done} of ${ALL.length} checked in</small></div><div class="status-list">${ALL.map(h => { const l = getLog(h.id, tk) || {};
+        <div class="dash-side"><section class="glass card"><div class="chart-h"><h3>Today</h3><small>${done} of ${ALL.length} checked in</small></div><div class="status-list">${ALL.map(h => { const l = getLog(h.id, tk) || {};
           return `<div class="status"><span>${esc(h.name)}</span>${l.s ? `<button class="ci-done" data-nav="today" data-tip="${l.s === 'c' ? 'You stayed clean today' : 'You logged a slip today'}">${CHECK}Checked in</button>` : `<button class="btn btn-primary btn-sm" data-press data-nav="today">Check in</button>`}</div>`; }).join('')}</div></section>
+        ${consistCard(H)}</div>
       </div>
       <div class="stats" style="margin-top:14px">
         <div class="glass card stat"><b data-count="${ALL.length}">0</b><span>Habits you're quitting</span></div>
@@ -269,8 +295,8 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
         <section class="glass card chart"><div class="chart-h"><h3>${homeHabit === 'all' ? 'Every day, all habits' : 'Every day'}</h3></div>
           <svg class="dash-bars" viewBox="0 0 ${W} ${Hh}" preserveAspectRatio="none" role="img" aria-label="Daily clean share">${bars}</svg>
           <div class="legend"><span><i class="c"></i>Clean share</span><span><i class="sl"></i>With a slip</span></div></section>
-        <section class="glass card chart"><div class="chart-h"><h3>When slips happen</h3></div>
-          <div class="wdbars">${wbars}</div><p class="vsub" style="margin-top:12px">${Math.max(...wd) ? `Your hardest day is <b>${['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][hard]}</b>. Plan something for it.` : 'No slips in this period.'}</p></section>
+        <section class="glass card chart slipcard"><div class="chart-h"><h3>When slips happen</h3><button class="info-i" type="button" aria-label="Why log slips" data-tip="Log the days you slip too, not only the clean ones. Honest check-ins show your real pattern: which days and moments are hardest. That is the only way Re:Root can help you plan for them. A slip is information, not a failure."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></button></div>
+          <div class="slip-bottom"><div class="wdbars">${wbars}</div><p class="vsub hardday">${Math.max(...wd) ? `Your hardest day is <b>${['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][hard]}</b>. Plan something for it.` : 'No slips in this period.'}</p></div></section>
       </div>`;
     const hn = $('#home-n'); hn && countUp(hn, bn);
     $$('[data-count]', r).forEach(el => countUp(el, +el.dataset.count));
@@ -388,9 +414,9 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
     }
     $('#prog-dyn', r).innerHTML = `
       <div class="stats">
-        <div class="glass card stat"><b data-count="${cur}">0</b><span>Current streak, days</span></div>
-        <div class="glass card stat"><b data-count="${lng}">0</b><span>Longest streak, days</span></div>
-        <div class="glass card stat"><b><span data-count="${rt}">0</span>%</b><span>Clean days</span></div>
+        <div class="glass card stat"><b data-count="${cur}">0</b><span>Current streak</span></div>
+        <div class="glass card stat"><b data-count="${lng}">0</b><span>Longest streak</span></div>
+        <div class="glass card stat"><b><span data-count="${rt}">0</span>%</b><span>Clean rate</span></div>
         <div class="glass card stat has-tip" data-tip="Your average urge strength in the chosen period. 0 means no urge at all, 5 is the strongest urge."><b>${au == null ? '–' : au.toFixed(1)}</b><span>Average urge, 0–5</span></div></div>
       <div class="charts">
         <section class="glass card chart"><div class="chart-h"><h3>Streak length</h3></div>${lineChart(h, Math.max(PR, 7))}</section>
@@ -584,8 +610,8 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
         if (!dayPop || dayPop.h !== id) dpAnim = id; dayPop = { h: id, k }; renderToday(); break; }
       case 'setday': { const k = b.dataset.k, sv = b.dataset.s; setLog(id, k, { s: sv || undefined }); buzz(); renderToday(); setTimeout(() => closeDayPop(), 260); if (sv === 'c') toast('Logged as clean'); break; }
       case 'toprog': S.sel = id; save(); gearOpen = null; $$('.gear-wrap.open').forEach(w => w.classList.remove('open')); go('progress'); break;
-      case 'hpick': homeHabit = id; pressIn(b.parentElement, b); renderHome(true); break;
-      case 'hrange': homeRange = b.dataset.r === 'all' ? 'all' : +b.dataset.r; pressIn(b.parentElement, b); renderHome(true); break;
+      case 'hpick': homeHabit = id; pressIn(b.parentElement, b); blurSwap('#home-dyn', () => renderHome(true)); break;
+      case 'hrange': homeRange = b.dataset.r === 'all' ? 'all' : +b.dataset.r; pressIn(b.parentElement, b); blurSwap('#home-dyn', () => renderHome(true)); break;
       case 'cycle': { const k = b.dataset.k, cur = (getLog(id, k) || {}).s; setLog(id, k, { s: cur === 'c' ? 'x' : cur === 'x' ? undefined : 'c' }); buzz(); renderToday(); break; }
       case 'add': newGoal = 30; editId = null; openSheet('New habit', habitForm()); break;
       case 'edit': { const h = S.habits.find(x => x.id === id); gearOpen = null; $$('.gear-wrap.open').forEach(w => w.classList.remove('open')); newGoal = h.goal; editId = id; openSheet(`Edit ${h.name}`, habitForm(h)); break; }
@@ -597,8 +623,8 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
         if (navigator.share) navigator.share({ title: 'My progress', text: txt }).catch(() => {}); else if (navigator.clipboard) navigator.clipboard.writeText(txt).then(() => toast('Progress copied to share'), () => toast(txt)); else toast(txt); break; }
       case 'pick-goal': newGoal = +b.dataset.g; $$('#goal-row .chip').forEach(c => c.setAttribute('aria-pressed', +c.dataset.g === newGoal)); break;
       case 'close-sheet': closeSheet(); break;
-      case 'pick': S.sel = id; save(); pressIn(b.parentElement, b); renderProgress(true); break;
-      case 'prange': progRange = b.dataset.r === 'all' ? 'all' : +b.dataset.r; pressIn(b.parentElement, b); renderProgress(true); break;
+      case 'pick': S.sel = id; save(); pressIn(b.parentElement, b); blurSwap('#prog-dyn', () => renderProgress(true)); break;
+      case 'prange': progRange = b.dataset.r === 'all' ? 'all' : +b.dataset.r; pressIn(b.parentElement, b); blurSwap('#prog-dyn', () => renderProgress(true)); break;
       case 'del': confirmDel = id; renderGoals(); break;
       case 'del-no': confirmDel = null; renderGoals(); break;
       case 'del-yes': S.habits = S.habits.filter(h => h.id !== id); for (const k in S.logs) delete S.logs[k][id]; confirmDel = null; gearOpen = null; save(); renderGoals(); toast('Habit deleted forever'); break;

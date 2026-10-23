@@ -88,6 +88,17 @@
     });
   }
 
+  // "Where Re:Root is used most": rows appear one by one, bars grow and the percentages count up
+  function countries(root, signal) {
+    const box = root.querySelector('.gcountries'); if (!box) return;
+    const rows = [...box.querySelectorAll('li')]; rows.forEach((li, k) => { li.style.setProperty('--k', k); const b = li.querySelector('b'); b.dataset.to = parseInt(b.textContent); b.textContent = '0%'; });
+    const run = () => { box.classList.add('in'); rows.forEach((li, k) => { const b = li.querySelector('b'), to = +b.dataset.to, t0 = performance.now() + 250 + k * 110, D = 900;
+      const step = n => { const t = Math.min(1, Math.max(0, (n - t0) / D)); b.textContent = Math.round(to * (1 - Math.pow(1 - t, 3))) + '%'; if (t < 1 && !signal.aborted) requestAnimationFrame(step); }; requestAnimationFrame(step); }); };
+    if (RR.motion.reduce) { rows.forEach(li => { const b = li.querySelector('b'); b.textContent = b.dataset.to + '%'; }); box.classList.add('in'); return; }
+    const io = new IntersectionObserver(es => { if (es[0].isIntersecting) { io.disconnect(); run(); } }, { threshold: .4 }); io.observe(box);
+    signal.addEventListener('abort', () => io.disconnect());
+  }
+
   function counters(root, signal) {
     const els = [...root.querySelectorAll('[data-cnt]')];
     const fmt = (v, f) => f === 'm' ? (v >= 1e6 ? (v / 1e6).toFixed(2).replace(/\.?0+$/, '') + 'M' : Math.round(v / 1e3) + 'k') : Math.round(v).toLocaleString('en-US');
@@ -117,6 +128,7 @@
   RR.communityPage = (root, signal) => {
     const g = root.querySelector('[data-globe]'); g && globe(g, signal);
     counters(root, signal);
+    countries(root, signal);
     const w = root.querySelector('[data-wheel]'); w && wheel(w, signal);
     dropText(root, signal);
   };

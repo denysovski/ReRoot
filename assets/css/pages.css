@@ -1454,14 +1454,13 @@ a.logo-pill:hover{transform:scale(1.04)}
 #art-grid .read-more.fading::before{animation-play-state:running}
 #art-grid .read-more:hover::before,#art-grid .read-more:focus-visible::before{opacity:1;animation-play-state:running;transition:opacity .25s ease}
 #art-grid .read-more:hover{box-shadow:var(--btn-ring),0 0 26px 3px color-mix(in srgb,var(--fg) 28%,transparent);transition:box-shadow .3s ease}
-/* violet-pink light behind the globe */
-.globe-orb{position:absolute;left:50%;top:50%;width:min(165vmin,1600px);aspect-ratio:1;translate:-50% -50%;border-radius:50%;pointer-events:none;z-index:-1;
-  background:radial-gradient(circle at 50% 50%,rgba(200,95,255,.5) 0%,rgba(232,104,206,.36) 30%,rgba(168,86,255,.18) 42%,rgba(124,92,255,.06) 54%,transparent 66%);opacity:.55;will-change:transform;animation:globeOrb 9s ease-in-out infinite alternate}
-/* the glow may spill softly into the sections above and below */
-.globe-sec{z-index:0;overflow-x:clip;overflow-y:visible}
-.globe-sec .globe-sticky{overflow:visible}
-.globe-sec ~ section,.globe-sec ~ div,.phead{position:relative;z-index:1}
-@keyframes globeOrb{from{transform:scale(.94) rotate(0deg)}to{transform:scale(1.04) rotate(25deg)}}
-:root[data-theme="light"] .globe-orb{opacity:.35}
-@media (prefers-color-scheme: light){:root:not([data-theme="dark"]) .globe-orb{opacity:.35}}
-@media (prefers-reduced-motion: reduce){.globe-orb{animation:none}}
+
+
+/* countries table: rows fade up one by one, bars grow */
+.gcountries li{opacity:0;transform:translateY(8px);transition:opacity .5s ease calc(.15s + var(--k,0) * .11s),transform .6s cubic-bezier(.25,1,.35,1) calc(.15s + var(--k,0) * .11s)}
+.gcountries li i{transform:scaleX(0);transform-origin:0 50%;transition:transform 1s cubic-bezier(.25,1,.35,1) calc(.25s + var(--k,0) * .11s)}
+.gcountries.in li{opacity:1;transform:none}
+.gcountries.in li i{transform:none}
+@media (prefers-reduced-motion: reduce){.gcountries li,.gcountries li i{opacity:1;transform:none;transition:none}}
+/* habit wheel: 200px wider */
+.wheel-stage{--wr:min(980px,96vw)}

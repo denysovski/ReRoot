@@ -392,3 +392,39 @@ svg.year rect.fut{fill:none;stroke:var(--faint);stroke-width:1}
 .dpwrap.open{grid-template-rows:1fr;opacity:1}
 .dpwrap .daypop{animation:none}
 @media (prefers-reduced-motion: reduce){.dpwrap{transition:none}}
+
+/* ---------- round 9 ---------- */
+/* right column: Today on top, consistency card fills the rest */
+.dash-side{display:grid;grid-template-rows:auto 1fr;gap:14px;min-width:0}
+.consist{position:relative;overflow:hidden;display:flex;flex-direction:column;gap:10px;isolation:isolate}
+.consist h3{font-size:clamp(19px,1.8vw,22px);font-weight:600;letter-spacing:-.02em;line-height:1.2;max-width:22ch}
+.cs-msg{color:var(--muted);font-size:14.5px;line-height:1.5;max-width:42ch}
+.cs-row{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-top:auto;padding-top:8px}
+.cs-days{display:grid;grid-template-columns:repeat(14,1fr);gap:5px;flex:1;max-width:330px}
+.cs-days i{aspect-ratio:1;border-radius:6px;box-shadow:inset 0 0 0 1.5px var(--faint);opacity:0;transform:scale(.4);animation:csPop .55s cubic-bezier(.3,1.5,.5,1) forwards;animation-delay:calc(.15s + var(--i) * 45ms)}
+.cs-days i.on{background:var(--fg);box-shadow:none}
+.cs-days i.td{outline:1.5px dashed var(--faint);outline-offset:2px}
+@keyframes csPop{to{opacity:1;transform:none}}
+.cs-n{display:flex;align-items:baseline;gap:2px;line-height:1}
+.cs-n b{font-family:var(--f-mono);font-size:clamp(34px,3.6vw,44px);font-weight:500;letter-spacing:-.04em}
+.cs-n span{font-size:16px;color:var(--muted)}
+.cs-foot{color:var(--muted);font-size:12.5px}
+.cs-glow{position:absolute;right:-80px;top:-90px;width:240px;height:240px;border-radius:50%;z-index:-1;pointer-events:none;
+  background:radial-gradient(circle,color-mix(in srgb,var(--fg) 16%,transparent),transparent 65%);animation:csGlow 6s ease-in-out infinite alternate}
+@keyframes csGlow{from{transform:translate(0,0) scale(.9)}to{transform:translate(-30px,20px) scale(1.1)}}
+@media (prefers-reduced-motion: reduce){.cs-days i{animation:none;opacity:1;transform:none}.cs-glow{animation:none}}
+/* stat labels: heavier, like "Clean from …" */
+.stat span:not([data-count]){font-size:15.5px;font-weight:600;color:var(--fg);letter-spacing:-.01em}
+.stat b span{font-size:inherit;font-weight:inherit;color:inherit}
+/* When slips happen: bigger title, info icon, chart pinned to the bottom */
+.slipcard{display:flex;flex-direction:column}
+.slipcard .chart-h{align-items:center}
+.slipcard .chart-h h3{font-size:22px}
+.slip-bottom{margin-top:auto;padding-top:14px}
+.hardday{margin-top:14px}
+.info-i{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:var(--muted);transition:color .25s,background-color .25s;cursor:help}
+.info-i svg{width:19px;height:19px}
+.info-i:hover,.info-i:focus-visible{color:var(--fg);background:var(--line)}
+/* filter change: blur, then come back into focus */
+#home-dyn,#prog-dyn{transition:filter .6s ease,opacity .6s ease}
+#home-dyn.blurred,#prog-dyn.blurred{filter:blur(9px);opacity:.6;transition:none}
