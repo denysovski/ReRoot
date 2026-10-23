@@ -257,5 +257,6 @@ html{scrollbar-gutter:stable}
 html.lenis,html.lenis body{height:auto}
 html.lenis.lenis-smooth{scroll-behavior:auto!important}
 .lenis.lenis-smooth [data-lenis-prevent]{overscroll-behavior:contain}
-.lenis.lenis-stopped{overflow:clip}
+/* hidden (not clip) keeps the reserved scrollbar gutter, so pausing scroll never shifts the layout */
+.lenis.lenis-stopped{overflow:hidden}
 .lenis.lenis-smooth iframe{pointer-events:none}

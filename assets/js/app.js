@@ -375,26 +375,37 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
       <div class="week">${week}</div>
       ${dayPop && dayPop.h === h.id ? (() => { const g = getLog(h.id, dayPop.k) || {}; return `<div class="dpwrap ${dpAnim === h.id ? '' : 'open'}" data-dp="${h.id}"><div><div class="daypop"><span>${fmt(fromKey(dayPop.k), { weekday: 'long', month: 'short', day: 'numeric' })}</span><div class="dp-btns"><button data-act="setday" data-h="${h.id}" data-k="${dayPop.k}" data-s="c" aria-pressed="${g.s === 'c'}">Stayed clean</button><button data-act="setday" data-h="${h.id}" data-k="${dayPop.k}" data-s="x" aria-pressed="${g.s === 'x'}">Slipped</button><button data-act="setday" data-h="${h.id}" data-k="${dayPop.k}" data-s="" class="dp-clear">Clear</button></div></div></div></div>`; })() : ''}
       <div class="choice"><button data-press data-act="clean" data-h="${h.id}" aria-pressed="${l.s === 'c'}">Stayed clean</button><button data-press data-act="slip" data-h="${h.id}" aria-pressed="${l.s === 'x'}">Slipped</button></div>
-      <div class="urge"><div class="urge-lab"><span>Urge strength today</span><span>0 none · 5 intense</span></div><div class="seg" role="group" aria-label="Urge strength">${[0, 1, 2, 3, 4, 5].map(u => `<button data-press data-act="urge" data-h="${h.id}" data-u="${u}" aria-pressed="${l.u === u}">${u}</button>`).join('')}</div></div>
+      <div class="urge"><div class="urge-lab"><span>Urge strength today</span></div><div class="seg" role="group" aria-label="Urge strength">${[0, 1, 2, 3, 4, 5].map(u => `<button data-press data-act="urge" data-h="${h.id}" data-u="${u}" aria-pressed="${l.u === u}">${u}</button>`).join('')}</div></div>
       <div class="slipwrap ${l.s === 'x' && slipAnim !== h.id ? 'open' : ''}" data-slip="${h.id}"><div><p class="slipnote">A slip is information, not a verdict. Your earlier clean days still count. <button data-act="article" data-a="slip">What to do next</button></p></div></div>
     </article>`;
+  }
+  /* ---------- diary: one optional entry per day, saved on demand, earlier days can be read back ---------- */
+  let diaryOpen = null, diaryAll = false;
+  function diaryHTML(tk) {
+    const cur = S.notes[tk] || '', past = Object.keys(S.notes).filter(k => k !== tk && (S.notes[k] || '').trim()).sort().reverse(), shown = diaryAll ? past : past.slice(0, 5);
+    return `<section class="glass card note diary"><div class="chart-h"><h3>Your diary</h3><small>${fmt(fromKey(tk), { weekday: 'long', month: 'long', day: 'numeric' })}</small></div>
+      <p class="vsub">How did today feel? How did you handle your habits, and did any urges come up? Write as much or as little as you like. It's optional.</p>
+      <textarea id="note-today" placeholder="Today I…">${esc(cur)}</textarea>
+      <div class="actions-row"><button class="btn btn-primary btn-sm" data-press data-act="diary-save" id="diary-save" ${cur ? 'disabled' : ''}>${cur ? 'Saved' : 'Save my diary'}</button><small class="muted">Stays private in this browser.</small></div>
+      ${past.length ? `<div class="diary-past"><h4>Earlier entries</h4>${shown.map(k => `<div class="dentry ${diaryOpen === k ? 'open' : ''}"><button class="dentry-h" data-act="diary-open" data-k="${k}"><span>${fmt(fromKey(k), { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })}</span><em>${esc(S.notes[k].trim().slice(0, 70))}${S.notes[k].trim().length > 70 ? '…' : ''}</em></button><div class="dentry-b"><div><p>${esc(S.notes[k]).replace(/\n/g, '<br>')}</p></div></div></div>`).join('')}
+        ${past.length > 5 && !diaryAll ? `<button class="btn-text" data-act="diary-all">Show all ${past.length} entries</button>` : ''}</div>` : ''}</section>`;
   }
   let slipAnim = null, dayPop = null, justKey = null, dpAnim = null, dpT = 0;
   // close the past-day panel with the same soft collapse it opened with, then redraw
   function closeDayPop(after) { clearTimeout(dpT); const w = dayPop && $(`[data-dp="${dayPop.h}"]`); if (!w || motion.reduce) { dayPop = null; after && after(); renderToday(); return; }
-    w.classList.remove('open'); dpT = setTimeout(() => { dayPop = null; after && after(); renderToday(); }, 430); }
+    w.classList.remove('open'); dpT = setTimeout(() => { const hid = dayPop.h; dayPop = null; after && after(); renderToday(); const t = $(`.dot.today[data-h="${hid}"]`); if (t) { t.focus({ preventScroll: true }); t.classList.add('back'); } }, 430); }
   function renderToday() {
     const r = $('#today-root'), tk = todayKey(), done = S.habits.filter(h => (getLog(h.id, tk) || {}).s).length;
     r.innerHTML = `<header class="vhead"><p class="eyebrow">${fmt(now(), { weekday: 'long', month: 'long', day: 'numeric' })}</p><h1 class="vtitle">Today</h1>
       <p class="vsub">${S.habits.length ? `<span class="ci-pill ${done === S.habits.length ? 'all' : ''}"><b>${done}</b> of ${S.habits.length} checked in</span> Tap a day in the week row to log the last 7 days.` : 'Nothing tracked yet.'}</p></header>
       ${exampleBanner()}
       ${S.habits.length ? `<div class="cards">${S.habits.map(habitCard).join('')}<button class="addcard" data-press data-act="add">+ Add a habit</button></div>
-      <section class="glass card note"><label for="note-today" style="font-weight:600">What helped today?</label><textarea id="note-today" placeholder="A walk after dinner, texting a friend, leaving the phone in the kitchen…">${esc(S.notes[tk] || '')}</textarea><small>Saved automatically in this browser.</small></section>` : emptyState()}`;
+      ${diaryHTML(tk)}` : emptyState()}`;
     animateRings(r);
     if (justKey) { const el = $(justKey, r); justKey = null; el && el.classList.add('just'); }
     if (dpAnim) { const w = $(`[data-dp="${dpAnim}"]`, r); dpAnim = null; w && requestAnimationFrame(() => requestAnimationFrame(() => w.classList.add('open'))); }
     if (slipAnim) { const w = $(`[data-slip="${slipAnim}"]`, r); slipAnim = null; w && requestAnimationFrame(() => requestAnimationFrame(() => w.classList.add('open'))); }
-    const ta = $('#note-today'); ta && ta.addEventListener('input', () => { S.notes[tk] = ta.value; save(); });
+    const ta = $('#note-today'); ta && ta.addEventListener('input', () => { const b = $('#diary-save'); b && (b.textContent = ta.value.trim() === (S.notes[tk] || '').trim() ? 'Saved' : 'Save my diary', b.disabled = ta.value.trim() === (S.notes[tk] || '').trim()); });
   }
 
   /* ---------- PROGRESS ---------- */
@@ -550,15 +561,22 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
     breath.on && stopBreath(); glass(r);
   }
   const PH = [['Breathe in', 4, .55, 1], ['Hold', 4, 1, 1], ['Breathe out', 6, 1, .55]];
-  function stopBreath() { breath.on = false; cancelAnimationFrame(breath.raf); const o = $('#orb'); o && (o.style.transform = 'scale(.55)'); const l = $('#orb-lab'); l && (l.textContent = 'Ready'); const b = $('#breathe-btn'); b && (b.textContent = 'Start breathing'); }
+  // the orb itself is a CSS animation (runs on the compositor, so it stays smooth); JS only updates the label when it changes
+  function stopBreath() {
+    breath.on = false; cancelAnimationFrame(breath.raf);
+    const o = $('#orb');
+    if (o) { const m = getComputedStyle(o).transform; o.classList.remove('breathing'); o.style.transition = 'none'; o.style.transform = m === 'none' ? 'scale(.55)' : m; o.offsetWidth;
+      o.style.transition = 'transform 1.1s cubic-bezier(.25,1,.35,1)'; o.style.transform = 'scale(.55)'; }
+    const l = $('#orb-lab'); l && (l.textContent = 'Ready'); const b = $('#breathe-btn'); b && (b.textContent = 'Start breathing');
+  }
   function startBreath() {
-    breath = { on: true, t0: performance.now(), rounds: 0, raf: 0 }; $('#breathe-btn').textContent = 'Stop';
+    breath = { on: true, t0: performance.now(), rounds: 0, raf: 0, lab: '' }; $('#breathe-btn').textContent = 'Stop';
+    const o = $('#orb'); o.style.transition = 'none'; o.style.transform = ''; o.offsetWidth; if (!motion.reduce) o.classList.add('breathing');
     const tick = n => { if (!breath.on || !$('#orb')) return;
       let t = ((n - breath.t0) / 1000) % 14, i = 0; const total = Math.floor((n - breath.t0) / 14000);
       while (t > PH[i][1]) { t -= PH[i][1]; i++; }
-      const [lab, dur, a, b] = PH[i], e = .5 - Math.cos(Math.PI * t / dur) / 2;
-      if (!motion.reduce) $('#orb').style.transform = `scale(${a + (b - a) * e})`;
-      $('#orb-lab').textContent = `${lab} ${Math.ceil(dur - t)}`;
+      const txt = `${PH[i][0]} ${Math.ceil(PH[i][1] - t)}`;
+      if (txt !== breath.lab) { breath.lab = txt; $('#orb-lab').textContent = txt; }
       if (total !== breath.rounds) { breath.rounds = total; $('#breathe-count').textContent = `${total} round${total === 1 ? '' : 's'}`; }
       breath.raf = requestAnimationFrame(tick); };
     breath.raf = requestAnimationFrame(tick);
@@ -671,6 +689,9 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
       case 'setday': { const k = b.dataset.k, sv = b.dataset.s; setLog(id, k, { s: sv || undefined }); buzz(); renderToday(); setTimeout(() => closeDayPop(), 260); if (sv === 'c') toast('Logged as clean'); break; }
       case 'toprog': S.sel = id; save(); gearOpen = null; $$('.gear-wrap.open').forEach(w => w.classList.remove('open')); go('progress'); break;
       case 'ins': insShow(+b.dataset.k); break;
+      case 'diary-save': { const ta = $('#note-today'); if (!ta) break; const v = ta.value.trim(); if (v) S.notes[tk] = ta.value; else delete S.notes[tk]; save(); b.textContent = 'Saved'; b.disabled = true; toast(v ? 'Diary saved' : 'Entry removed'); break; }
+      case 'diary-open': { const k = b.dataset.k, e = b.closest('.dentry'), on = !e.classList.contains('open'); $$('.dentry.open').forEach(x => x !== e && x.classList.remove('open')); e.classList.toggle('open', on); diaryOpen = on ? k : null; break; }
+      case 'diary-all': diaryAll = true; renderToday(); break;
       case 'hpick': homeHabit = id; pressIn(b.parentElement, b); blurSwap('#home-dyn', () => renderHome(true)); break;
       case 'hrange': homeRange = b.dataset.r === 'all' ? 'all' : +b.dataset.r; pressIn(b.parentElement, b); blurSwap('#home-dyn', () => renderHome(true)); break;
       case 'cycle': { const k = b.dataset.k, cur = (getLog(id, k) || {}).s; setLog(id, k, { s: cur === 'c' ? 'x' : cur === 'x' ? undefined : 'c' }); buzz(); renderToday(); break; }

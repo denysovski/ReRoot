@@ -492,3 +492,25 @@ svg.year rect.fut{fill:none;stroke:var(--faint);stroke-width:1}
 /* blur fades in, data swaps, blur fades out */
 #home-dyn,#prog-dyn{transition:filter .6s ease,opacity .6s ease}
 #home-dyn.blurred,#prog-dyn.blurred{filter:blur(9px);opacity:.6;transition:filter .28s ease,opacity .28s ease}
+.dot.today.back{animation:dotBack 1.1s cubic-bezier(.25,1,.35,1)}
+@keyframes dotBack{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--fg) 60%,transparent)}40%{box-shadow:0 0 0 7px color-mix(in srgb,var(--fg) 0%,transparent);transform:scale(1.08)}100%{box-shadow:0 0 0 0 transparent;transform:none}}
+/* diary */
+.diary textarea{min-height:120px}
+.diary .actions-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.diary #diary-save:disabled{opacity:.55;cursor:default}
+.diary-past{margin-top:10px;display:grid;gap:6px}
+.diary-past h4{font-size:14px;font-weight:600;color:var(--muted);margin:4px 0 4px}
+.dentry{border-radius:14px;background:var(--line);overflow:hidden}
+.dentry-h{width:100%;display:grid;gap:2px;text-align:left;padding:12px 14px;font-size:14px}
+.dentry-h span{font-weight:600}
+.dentry-h em{font-style:normal;color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:opacity .3s}
+.dentry.open .dentry-h em{opacity:0}
+.dentry-b{display:grid;grid-template-rows:0fr;transition:grid-template-rows .45s var(--ease)}
+.dentry-b>div{overflow:hidden;min-height:0}
+.dentry-b p{padding:0 14px 14px;margin:0;font-size:14.5px;line-height:1.55;white-space:normal}
+.dentry.open .dentry-b{grid-template-rows:1fr}
+.dentry.open .dentry-h em{display:none}
+/* breathing orb: 4 s in, 4 s hold, 6 s out, on the compositor */
+@keyframes breatheOrb{0%{transform:scale(.55);animation-timing-function:cubic-bezier(.45,0,.55,1)}28.571%{transform:scale(1);animation-timing-function:linear}57.143%{transform:scale(1);animation-timing-function:cubic-bezier(.45,0,.55,1)}100%{transform:scale(.55)}}
+.orb.breathing{animation:breatheOrb 14s infinite}
+.orb{backface-visibility:hidden;transform:translateZ(0) scale(.55)}
