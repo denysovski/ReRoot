@@ -229,10 +229,33 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
   const blurT = {};
   function blurSwap(sel, render) {
     const el = $(sel); if (!el || motion.reduce) { render(); return; }
-    el.classList.remove('unblur'); el.classList.add('blurred'); render();
-    clearTimeout(blurT[sel]); blurT[sel] = setTimeout(() => { const e = $(sel); if (!e) return; e.classList.add('unblur'); e.classList.remove('blurred'); }, 300);
+    clearTimeout(blurT[sel]); el.classList.add('blurred');
+    blurT[sel] = setTimeout(() => { render(); blurT[sel] = setTimeout(() => { const e = $(sel); e && e.classList.remove('blurred'); }, 60); }, 280);
   }
   function pressIn(group, btn) { $$('[aria-pressed]', group).forEach(x => x.setAttribute('aria-pressed', x === btn)); const seg = btn.closest('.seg.rng'); seg && placeThumb(seg, true); }
+  /* ---------- home streak chart: the line climbs day by day, drops at each slip; the peak before a reset is labelled ---------- */
+  function streakChart(h, n) {
+    const data = daySeries(h, n), W = 640, H = 240, L = 30, R = 16, T = 30, B = 26;
+    const mx = Math.max(...data.map(d => d.v), 1), top = mx <= 5 ? 5 : mx <= 10 ? 10 : Math.ceil(mx * 1.1 / 10) * 10;
+    const x = i => L + i * (W - L - R) / Math.max(1, data.length - 1), y = v => T + (1 - v / top) * (H - T - B);
+    const pts = data.map((d, i) => `${x(i).toFixed(1)},${y(d.v).toFixed(1)}`), E = data.length - 1;
+    // resets: a slip day after a run; keep labels for the biggest peaks so long ranges stay readable
+    const resets = []; data.forEach((d, i) => { if (i && d.v === 0 && data[i - 1].v > 0 && (getLog(h.id, d.k) || {}).s === 'x') resets.push({ i, peak: data[i - 1].v }); });
+    const labelled = new Set(resets.slice().sort((a, b) => b.peak - a.peak).slice(0, 5).filter(o => o.peak >= 2).map(o => o.i));
+    const marks = resets.map((o, k) => { const px = x(o.i - 1), py = y(o.peak), sx = x(o.i), sy = y(0), lab = labelled.has(o.i);
+      return `<g class="sk-mark" style="--d:${(.9 + k * .06).toFixed(2)}s">${lab ? `<text class="sk-peak" x="${px}" y="${py - 9}" text-anchor="middle">${o.peak}</text>` : ''}
+        <circle class="sk-slip" cx="${sx}" cy="${sy}" r="4.5"/>${lab ? `<text class="sk-sliplab" x="${sx}" y="${sy + 17}" text-anchor="middle">Slip</text>` : ''}</g>`; }).join('');
+    const last = data[E];
+    return `<svg class="streak-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Your streak over time, now ${last.v} days">
+      <defs><linearGradient id="skg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--fg);stop-opacity:.14"/><stop offset="1" style="stop-color:var(--fg);stop-opacity:0"/></linearGradient></defs>
+      ${[0, top / 2, top].map(t => `<line class="grid" x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}"/><text class="sk-ax" x="${L - 8}" y="${y(t) + 4}" text-anchor="end">${t}</text>`).join('')}
+      <path class="sk-area" d="M${pts.join('L')}L${x(E)},${y(0)}L${x(0)},${y(0)}Z" fill="url(#skg)"/>
+      <path class="sk-line" d="M${pts.join('L')}" pathLength="1"/>
+      ${marks}
+      <g class="sk-mark" style="--d:1.2s"><circle class="sk-now" cx="${x(E)}" cy="${y(last.v)}" r="5"/><text class="sk-nowlab" x="${x(E) - 10}" y="${y(last.v) - 11}" text-anchor="end">Now ${last.v}</text></g>
+    </svg>`;
+  }
+
   /* ---------- insights: four rotating cards under Today ---------- */
   let insT = 0, insI = 0;
   const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
@@ -328,18 +351,18 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
         <div class="glass card stat"><b><span data-count="${rt}">0</span>%</b><span>Clean rate</span></div>
         <div class="glass card stat"><b data-count="${slips}">0</b><span>Slips</span></div></div>
       <div class="charts">
-        <section class="glass card chart"><div class="chart-h"><h3>${homeHabit === 'all' ? 'Every day, all habits' : 'Every day'}</h3></div>
-          <svg class="dash-bars" viewBox="0 0 ${W} ${Hh}" preserveAspectRatio="none" role="img" aria-label="Daily clean share">${bars}</svg>
-          <div class="legend"><span><i class="c"></i>Clean share</span><span><i class="sl"></i>With a slip</span></div></section>
-        <section class="glass card chart slipcard"><div class="chart-h"><h3>When slips happen</h3><button class="info-i" type="button" aria-label="Why log slips" data-tip="Log the days you slip too, not only the clean ones. Honest check-ins show your real pattern: which days and moments are hardest. That is the only way Re:Root can help you plan for them. A slip is information, not a failure."><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg></button></div>
+        <section class="glass card chart"><div class="chart-h"><h3>Your streak</h3><small>${esc(best.name)}</small></div>${streakChart(best, Math.max(7, n))}
+          <div class="legend"><span><i class="c"></i>Days in a row</span><span><i class="sl dot"></i>Slip, streak resets</span></div></section>
+        <section class="glass card chart slipcard"><div class="chart-h"><h3>When slips happen</h3><span class="info-i" tabindex="0" role="button" aria-label="Why log slips"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg><span class="info-pop" role="tooltip">Log slips honestly too. They show your real pattern, so you can plan for the hard days.</span></span></div>
           <div class="slip-bottom"><div class="wdbars">${wbars}</div><p class="vsub hardday">${Math.max(...wd) ? `Your hardest day is <b>${['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][hard]}</b>. Plan something for it.` : 'No slips in this period.'}</p></div></section>
       </div>`;
     const hn = $('#home-n'); hn && countUp(hn, bn);
     insStart();
     $$('[data-count]', r).forEach(el => countUp(el, +el.dataset.count));
     const arc = $('.goal-ring .arc', r); requestAnimationFrame(() => requestAnimationFrame(() => arc && (arc.style.strokeDashoffset = arc.dataset.to)));
-    const bs = $$('.anim-bar', r), ws = $$('.anim-wd', r);
-    new Spring(0, { eps: .0005 }).on(p => { bs.forEach((b, i) => b.style.transform = `scaleY(${clamp(p * 1.6 - i / bs.length * .6)})`); ws.forEach(w => w.style.transform = `scaleY(${clamp(p)})`); }).to(1, { response: 1, damping: 1 });
+    const ws = $$('.anim-wd', r), sc = $('.streak-svg', r);
+    new Spring(0, { eps: .0005 }).on(p => ws.forEach(w => w.style.transform = `scaleY(${clamp(p)})`)).to(1, { response: 1, damping: 1 });
+    sc && requestAnimationFrame(() => requestAnimationFrame(() => sc.classList.add('drawn')));
   }
 
   /* ---------- TODAY ---------- */
