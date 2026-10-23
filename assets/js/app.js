@@ -5,7 +5,14 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
   let user = auth.current(); if (!user) return;
   // animated plasma behind the dashboard (dark and light variants follow the theme)
   const pbg = document.createElement('div'); pbg.className = 'plasma-bg'; pbg.setAttribute('aria-hidden', 'true'); layoutRoot.prepend(pbg);
-  const plasma = RR.plasma ? RR.plasma(pbg, { lightMode: !theme.isDark(), opacity: .85, quality: .6 }) : null;
+  let plasma = null;
+  const fxOn = k => RR.ls.get('reroot.fx.' + k, true) !== false;
+  const setPlasma = on => {
+    if (on && !plasma && RR.plasma) { pbg.hidden = false; plasma = RR.plasma(pbg, { lightMode: !theme.isDark(), opacity: .85, quality: .6 }); }
+    if (!on && plasma) { plasma.destroy(); plasma = null; }
+    pbg.hidden = !on;
+  };
+  setPlasma(fxOn('plasma'));
   const plasmaTheme = () => { if (!plasma) return; plasma.cfg.lightMode = !theme.isDark(); plasma.update(); };
   document.addEventListener('rr:theme', plasmaTheme, { signal });
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', plasmaTheme, { signal });
@@ -103,6 +110,11 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
   $('#time-dd').innerHTML = timeDD('m-time', user.prefs.reminder || '20:00');
   $('#m-tz').addEventListener('change', e => { user = auth.update({ prefs: { tz: e.target.value } }); toast(`Timezone set to ${e.target.value.replace(/_/g, ' ')}`); RENDER[view](); scheduleReminder(); });
   $('#m-theme').addEventListener('click', e => { const b = e.target.closest('[data-t]'); if (!b) return; theme.set(b.dataset.t); paintAcct(); RENDER[view](); });
+  // effects: animated background and the hexagon glow under the cursor can each be turned off
+  const paintFx = () => { $('#m-fx-plasma').setAttribute('aria-checked', fxOn('plasma')); $('#m-fx-hex').setAttribute('aria-checked', fxOn('hex')); };
+  $('#m-fx-plasma').addEventListener('click', () => { const on = !fxOn('plasma'); RR.ls.set('reroot.fx.plasma', on); setPlasma(on); paintFx(); toast(on ? 'Animated background on' : 'Animated background off'); });
+  $('#m-fx-hex').addEventListener('click', () => { const on = !fxOn('hex'); RR.ls.set('reroot.fx.hex', on); document.documentElement.classList.toggle('no-hexglow', !on); paintFx(); toast(on ? 'Hexagon glow on' : 'Hexagon glow off'); });
+  paintFx();
   $('#m-notif').addEventListener('click', async () => {
     const on = !user.prefs.notif;
     if (on) {

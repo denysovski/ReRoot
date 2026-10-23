@@ -606,3 +606,6 @@ svg.year rect.fut{fill:none;stroke:var(--faint);stroke-width:1}
 .year-wrap::-webkit-scrollbar{height:3px}
 .year-wrap::-webkit-scrollbar-track{background:var(--line);border-radius:3px}
 .year-wrap::-webkit-scrollbar-thumb{background:var(--fg);border-radius:3px}
+.mrow.mfx{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.mrow.mfx span{font-size:13.5px}
+.menu .mrow.mfx > span{color:var(--fg);font-size:13.5px}

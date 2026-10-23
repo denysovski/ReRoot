@@ -264,3 +264,4 @@ html.lenis.lenis-smooth{scroll-behavior:auto!important}
 html{overflow-y:scroll}
 #splash.again{animation:splashIn .3s ease backwards}
 @keyframes splashIn{from{opacity:0}}
+html.no-hexglow .hexglow{display:none}
