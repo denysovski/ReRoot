@@ -6,22 +6,28 @@ Re:Root is a private habit tracker for quitting the things you keep going back t
 
 Live site: https://denysovski.github.io/ReRoot/
 
-> Demo project. Accounts, reminders and the community chat are simulated in the browser. Nothing is sent to a server.
+> Demo project. Accounts and reminders are simulated in the browser, and community figures and stories are illustrative. Nothing is sent to a server.
 
 ![Homepage](docs/screenshots/home.png)
 
-*Screenshots show the light theme. The site opens in the dark coal theme by default.*
+*Screenshots show the default dark coal theme. A light theme and an automatic mode are in the menu.*
 
 ## What's inside
 
-- **Daily check-in**: "Stayed clean" or "Slipped", an urge rating from 0 to 5 and a short note.
-- **Goals**: a target streak per habit and milestones from 1 to 365 days.
-- **Progress**: streak line, urge bars and a 12-week calendar.
-- **Read**: a breathing exercise and short guides on urges, triggers and slips.
-- **Community**: anonymous rooms per habit. Messages disappear after 10 minutes.
-- **Reminders**: real browser notifications at a time you choose.
+- **Home dashboard**: your longest current run with a goal ring, filters by habit and by period (7 days to all time), a streak chart that marks every slip and the peak before it, a weekday chart of when slips happen, and rotating insight cards (consistency, most improved habit, how often you slip, whether urges are getting weaker).
+- **Daily check-in**: "Stayed clean" or "Slipped" and an urge rating from 0 to 5. Missed a day? Tap it in the week row and log the last 7 days.
+- **Diary**: an optional entry for each day, saved with the time you wrote it, with a history of every day.
+- **Progress**: current and longest streak, clean rate, average urge, streak and urge charts, the whole year as a calendar and a list of the days you slipped.
+- **Goals**: a target streak per habit, with editing, sharing and reminders in each habit's settings.
+- **Read**: a breathing exercise (4 · 4 · 6) and short guides on urges, triggers and slips.
+- **Reminders**: real browser notifications with a sound, at a time you choose.
+- **Community**: a 3D globe of where people use Re:Root, check-in times and the habits people are beating.
+
+![App, Home](docs/screenshots/app-home.png)
 
 ![App, Today](docs/screenshots/app-today.png)
+
+![App, Progress](docs/screenshots/app-progress.png)
 
 ## Style
 
@@ -61,7 +67,7 @@ Motion follows Apple's *Designing Fluid Interfaces* principles:
 
 ### 3D scenes
 
-Real CSS 3D (perspective and `preserve-3d`), no images or libraries. Each scene tilts toward the mouse, floats gently when idle, and returns smoothly 1.5 seconds after the mouse leaves.
+Real CSS 3D (perspective and `preserve-3d`), no images or 3D libraries. Each scene tilts toward the mouse, floats gently when idle, and returns smoothly 1.5 seconds after the mouse leaves.
 
 - **Calendar** on the homepage: clean days raised off the page, today floating highest, with streak, check-in and urge chips around it.
 - **Habit list**: a stack of habit rows with streak rings and a week of check-ins, which spreads apart on hover.
@@ -80,6 +86,18 @@ Real CSS 3D (perspective and `preserve-3d`), no images or libraries. Each scene 
 
 ![About](docs/screenshots/about-3d.png)
 
+- **Community globe**: a rotating, draggable globe drawn with d3-geo, with labelled countries and a dot for every group of users.
+
+![Community](docs/screenshots/community.png)
+
+### Text effects
+
+- **How it works**: the title words fly in from both sides, letters roll like a slot machine as you scroll, and question bubbles pop out of a dot.
+- **Homepage title**: letters get heavier as the cursor comes near (variable font weight).
+- **About title**: a soft band of light sweeps across the text and follows the cursor on hover.
+
+![How it works](docs/screenshots/how-it-works.png)
+
 ### Type
 
 [Geist](https://vercel.com/font) for everything, Geist Mono for numbers. Headings are large and tightly spaced, body text is calm and grey.
@@ -89,15 +107,20 @@ Real CSS 3D (perspective and `preserve-3d`), no images or libraries. Each scene 
 - `/`: homepage
 - `/how-it-works`: the five steps
 - `/showcase`: every app screen, explained
-- `/community`: chat rooms
+- `/community`: the globe and community stats
 - `/articles` and `/articles/<id>`: guides
 - `/about`: mission, team and partners
-- `/faq`, `/contact`, `/terms`, `/privacy`
+- `/faq`, `/contact`
+- `/terms`, `/privacy`, `/medical-disclaimer`: legal pages
 - `/register`, `/login`, `/onboarding`
 - `/app`, `/app/today`, `/app/progress`, `/app/goals`, `/app/read`: the tracker
 
-It is a single-page app with clean URLs, built with plain HTML, CSS and JavaScript, with no framework and no build step. Everything is stored in your browser's local storage.
+It is a single-page app with clean URLs, built with plain HTML, CSS and JavaScript, with no framework. Every public URL also exists as its own static page with a title, description, canonical link, Open Graph tags and structured data, so search engines can index it. A `sitemap.xml` and `robots.txt` are included.
+
+## Privacy and security
+
+Everything is stored in your browser's local storage. There is no server or database, so nothing you log is sent anywhere. Passwords are hashed with PBKDF2 and a random salt, repeated failed logins are slowed down, and every page has a strict Content-Security-Policy. See [SECURITY.md](SECURITY.md).
 
 ## Disclaimer
 
-Re:Root is a self-tracking tool, not medical care. If a habit is harming your health, talk to a doctor or therapist.
+Re:Root is a self-tracking tool, not medical care. If a habit is harming your health, talk to a doctor or therapist. Read the full [medical disclaimer](https://denysovski.github.io/ReRoot/medical-disclaimer/).
