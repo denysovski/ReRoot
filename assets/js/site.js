@@ -320,10 +320,31 @@
     signal.addEventListener('abort', () => cancelAnimationFrame(raf));
   }
 
+  /* stories: the moving cards ride along an arc. Flat on the left, the path sags and then bends up toward the right edge;
+     every card tilts to follow the curve. */
+  function storyArc(root, signal) {
+    const sec = $('.stories', root); if (!sec || motion.reduce) return;
+    const cards = $$('.st-row .story', sec); if (!cards.length) return;
+    let on = false, raf = 0;
+    const io = new IntersectionObserver(es => { on = es[0].isIntersecting; if (on && !raf) raf = requestAnimationFrame(tick); }, { rootMargin: '100px' }); io.observe(sec);
+    function tick() {
+      raf = 0; if (!on) return;
+      const vw = innerWidth, A = vw < 700 ? 45 : vw < 1100 ? 110 : 160;   // how far the right end rises
+      const xs = cards.map(c => { const r = c.getBoundingClientRect(); return r.left + r.width / 2; });
+      cards.forEach((c, i) => {
+        const u = Math.min(1.15, Math.max(-.15, xs[i] / vw)), y = -A * u * u, ang = Math.atan(-2 * A * u / vw) * 180 / Math.PI;
+        c.style.transform = `translate3d(0,${(y + A * .5).toFixed(1)}px,0) rotate(${ang.toFixed(2)}deg)`;
+      });
+      raf = requestAnimationFrame(tick);
+    }
+    signal.addEventListener('abort', () => { io.disconnect(); cancelAnimationFrame(raf); });
+  }
+
   function enhance(root, signal) {
     thread(root, signal);
     proximity(root, signal);
     shiny(root, signal);
+    storyArc(root, signal);
     letterSwap(root, signal);
     inchworm(root, signal);
     heroOrb(root, signal);

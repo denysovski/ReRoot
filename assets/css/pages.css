@@ -1525,3 +1525,9 @@ html:not(.ready) .swap .sw-0,html:not(.ready) .swap .sw-1,html:not(.ready) .swap
 /* community: member count as a white pill */
 .crowd p.crowd-pill{display:inline-block;white-space:nowrap;line-height:44px;height:44px;padding:0 20px;border-radius:999px;background:var(--fg);color:var(--bg)!important;font-size:clamp(15px,1.3vw,17px);font-weight:500}
 .crowd .crowd-pill b{color:var(--bg);font-size:1.1em;font-weight:700}
+/* stories along an arc: extra room above and below the bending rows */
+.stories .st-rows{padding-block:clamp(50px,7vw,110px) clamp(20px,3vw,40px)}
+.st-row .story{will-change:transform;transform-origin:50% 50%}
+.stories .st-row-wrap{overflow-x:clip;overflow-y:visible;padding-block:200px;margin-block:-200px}
+@media (max-width:700px){.stories .st-row-wrap{padding-block:110px;margin-block:-110px}}
+.stories .st-rows{gap:clamp(36px,5vw,80px)}
