@@ -1555,3 +1555,6 @@ html:not(.ready) .crowd p.crowd-pill,html:not(.ready) .crowd p.crowd-pill > *{an
 /* magnet buttons glide back smoothly */
 .magnet{transition:translate .45s cubic-bezier(.22,1,.36,1)}
 .magnet.mag-on{transition:translate .18s ease-out}
+/* the rows' padded strips overlap each other; let clicks pass through the empty space to the cards underneath */
+.stories .st-row-wrap,.stories .st-row{pointer-events:none}
+.stories .st-row .story{pointer-events:auto}
