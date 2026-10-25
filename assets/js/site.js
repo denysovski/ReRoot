@@ -344,8 +344,8 @@
   function magnet(root, signal) {
     if (motion.reduce || !matchMedia('(hover:hover) and (pointer:fine)').matches) return;
     const els = [];
-    if (root.dataset.view === 'home') $$('[data-guest] a', root).forEach(a => /^(Open the app|Go to today's check-in)$/.test(a.textContent.trim()) && els.push(a));
-    $$('.footer a[href="app"], .footer a[href="app/today"]').forEach(a => els.push(a));
+    if (root.dataset.view === 'home') $$('[data-guest] a', root).forEach(a => a.textContent.trim() === 'Open the app' && els.push(a));
+    $$('.footer a[href="app"]').forEach(a => els.push(a));
     if (!els.length) return;
     const PAD = 90, STRENGTH = 3;
     els.forEach(el => { el.classList.add('magnet'); });
@@ -354,7 +354,8 @@
       els.forEach(el => { const r = el.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
         const near = mx > r.left - PAD && mx < r.right + PAD && my > r.top - PAD && my < r.bottom + PAD;
         el.classList.toggle('mag-on', near);
-        el.style.translate = near ? `${((mx - cx) / STRENGTH).toFixed(1)}px ${((my - cy) / STRENGTH).toFixed(1)}px` : '0px 0px'; }); };
+        const MAX = 3, cl = v => Math.max(-MAX, Math.min(MAX, v));   // gentle: at most 3px in any direction
+        el.style.translate = near ? `${cl((mx - cx) / STRENGTH).toFixed(1)}px ${cl((my - cy) / STRENGTH).toFixed(1)}px` : '0px 0px'; }); };
     addEventListener('pointermove', e => { mx = e.clientX; my = e.clientY; if (!raf) raf = requestAnimationFrame(tick); }, { passive: true, signal });
     document.addEventListener('pointerleave', () => { mx = my = -1e4; if (!raf) raf = requestAnimationFrame(tick); }, { signal });
     signal.addEventListener('abort', () => { cancelAnimationFrame(raf); els.forEach(el => { el.style.translate = ''; el.classList.remove('magnet', 'mag-on'); }); });
