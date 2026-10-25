@@ -344,7 +344,7 @@
   function magnet(root, signal) {
     if (motion.reduce || !matchMedia('(hover:hover) and (pointer:fine)').matches) return;
     const els = [];
-    if (root.dataset.view === 'home') $$('[data-guest] a', root).forEach(a => a.textContent.trim() === 'Open the app' && els.push(a));
+    $$('[data-guest] a', root).forEach(a => a.textContent.trim() === 'Open the app' && els.push(a));
     $$('.footer a[href="app"]').forEach(a => els.push(a));
     if (!els.length) return;
     const PAD = 90, STRENGTH = 3;
@@ -457,7 +457,8 @@
     // community: avatars slide in and the member count climbs
     $$('[data-crowd]', root).forEach(cw => {
       const n = $('[data-count-to]', cw), to = +n.dataset.countTo; cw.classList.add('go');
-      n.textContent = '0k'; setTimeout(() => new Spring(0, { eps: .0005 }).on(p => { n.textContent = Math.round(to * p) + 'k'; }).to(1, { response: .9, damping: 1 }), motion.reduce ? 0 : 750);
+      const from = Math.min(11, to); n.textContent = from + 'k';   // start at two digits so the pill never changes width
+      setTimeout(() => new Spring(0, { eps: .0005 }).on(p => { n.textContent = Math.round(from + (to - from) * p) + 'k'; }).to(1, { response: .9, damping: 1 }), motion.reduce ? 0 : 200);
     });
     const els = $$('[data-ring-anim], [data-strip-anim]', root); if (!els.length) return;
     const run = el => {

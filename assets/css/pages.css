@@ -1543,12 +1543,11 @@ html:not(.ready) .swap .sw-0,html:not(.ready) .swap .sw-1,html:not(.ready) .swap
   .motiv span,.motiv span:not(:empty){display:block!important;font-size:10.5px;line-height:1.2;white-space:nowrap}
   .motiv b{grid-column:2;font-size:14px;line-height:1.15}
 }
-/* community pill: the white pill opens first, then the text fades in */
-.crowd p.crowd-pill{clip-path:inset(0 100% 0 0 round 999px);animation:pillOpen .7s cubic-bezier(.22,1,.36,1) .2s forwards}
-.crowd p.crowd-pill > *{opacity:0;animation:fadein .5s ease .75s forwards}
-@keyframes pillOpen{to{clip-path:inset(0 0 0 0 round 999px)}}
-html:not(.ready) .crowd p.crowd-pill,html:not(.ready) .crowd p.crowd-pill > *{animation-play-state:paused}
-@media (prefers-reduced-motion: reduce){.crowd p.crowd-pill{clip-path:none;animation:none}.crowd p.crowd-pill > *{opacity:1;animation:none}}
+/* community pill: pill and text fade in together */
+.crowd p.crowd-pill{opacity:0;transform:translateY(6px);animation:pillIn .6s cubic-bezier(.22,1,.36,1) .15s forwards}
+@keyframes pillIn{to{opacity:1;transform:none}}
+html:not(.ready) .crowd p.crowd-pill{animation-play-state:paused}
+@media (prefers-reduced-motion: reduce){.crowd p.crowd-pill{opacity:1;transform:none;animation:none}}
 /* how it works: lighter rendering (no live backdrop blur on moving chips and step cards) */
 .habit-cloud .chip{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;background:var(--surface)!important}
 .steps .step.glass{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;background:var(--surface)!important}
