@@ -340,6 +340,26 @@
     signal.addEventListener('abort', () => { io.disconnect(); cancelAnimationFrame(raf); });
   }
 
+  /* "Magnet" (React Bits): buttons drift toward the cursor when it comes close. Only on the homepage content and in the footer, never in the nav. */
+  function magnet(root, signal) {
+    if (motion.reduce || !matchMedia('(hover:hover) and (pointer:fine)').matches) return;
+    const els = [];
+    if (root.dataset.view === 'home') $$('[data-guest] a', root).forEach(a => /^(Open the app|Go to today's check-in)$/.test(a.textContent.trim()) && els.push(a));
+    $$('.footer a[href="app"], .footer a[href="app/today"]').forEach(a => els.push(a));
+    if (!els.length) return;
+    const PAD = 90, STRENGTH = 3;
+    els.forEach(el => { el.classList.add('magnet'); });
+    let raf = 0, mx = -1e4, my = -1e4;
+    const tick = () => { raf = 0;
+      els.forEach(el => { const r = el.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+        const near = mx > r.left - PAD && mx < r.right + PAD && my > r.top - PAD && my < r.bottom + PAD;
+        el.classList.toggle('mag-on', near);
+        el.style.translate = near ? `${((mx - cx) / STRENGTH).toFixed(1)}px ${((my - cy) / STRENGTH).toFixed(1)}px` : '0px 0px'; }); };
+    addEventListener('pointermove', e => { mx = e.clientX; my = e.clientY; if (!raf) raf = requestAnimationFrame(tick); }, { passive: true, signal });
+    document.addEventListener('pointerleave', () => { mx = my = -1e4; if (!raf) raf = requestAnimationFrame(tick); }, { signal });
+    signal.addEventListener('abort', () => { cancelAnimationFrame(raf); els.forEach(el => { el.style.translate = ''; el.classList.remove('magnet', 'mag-on'); }); });
+  }
+
   function enhance(root, signal) {
     thread(root, signal);
     proximity(root, signal);
@@ -351,6 +371,7 @@
     scrollScenes(root, signal);
     const user = auth.current();
     if (user) $$('[data-guest]', root).forEach(el => el.innerHTML = `<a class="btn btn-primary" data-press href="app">Open the app</a><a class="btn-text" href="app/today">Go to today's check-in</a>`);
+    magnet(root, signal);
     glass(root);
     /* scroll-linked 3D entrances: content slides in from the sides or rises from depth as it enters */
     const items = $$('[data-reveal]', root).map(el => {
@@ -373,13 +394,13 @@
       const raw = motion.reduce ? 1 : clamp((vh - r.top) / (vh * it.span));
       if (Math.abs(raw - it.p) < .002) return; it.p = raw;
       const q = 1 - ease(raw), s = it.el.style;
-      if (raw >= 1) { s.translate = ''; s.rotate = ''; s.scale = ''; s.opacity = ''; s.filter = ''; return; }
+      if (raw >= 1) { s.translate = ''; s.rotate = ''; s.scale = ''; s.opacity = ''; return; }
       const narrow = innerWidth < 700, side = narrow ? 60 : (it.side || 160);
       if (it.mode === 'left') { s.translate = `${-side * q}px ${30 * q}px 0`; s.rotate = `y ${18 * q}deg`; }
       else if (it.mode === 'right') { s.translate = `${side * q}px ${30 * q}px 0`; s.rotate = `y ${-18 * q}deg`; }
       else { s.translate = `0 ${70 * q}px ${-420 * q}px`; s.rotate = `x ${22 * q}deg`; }
       s.opacity = (.1 + .9 * ease(raw)).toFixed(3);
-      s.filter = q > .02 ? `blur(${(q * 6).toFixed(1)}px)` : '';
+      // (no blur here: animating filter on many cards made fast scrolling stutter)
     };
     let ticking = false;
     const onScroll = () => { if (ticking) return; ticking = true; requestAnimationFrame(() => { ticking = false; items.forEach(apply); }); };
@@ -435,7 +456,7 @@
     // community: avatars slide in and the member count climbs
     $$('[data-crowd]', root).forEach(cw => {
       const n = $('[data-count-to]', cw), to = +n.dataset.countTo; cw.classList.add('go');
-      new Spring(0, { eps: .0005 }).on(p => { n.textContent = Math.round(to * p) + 'k'; }).to(1, { response: .9, damping: 1 });
+      n.textContent = '0k'; setTimeout(() => new Spring(0, { eps: .0005 }).on(p => { n.textContent = Math.round(to * p) + 'k'; }).to(1, { response: .9, damping: 1 }), motion.reduce ? 0 : 750);
     });
     const els = $$('[data-ring-anim], [data-strip-anim]', root); if (!els.length) return;
     const run = el => {

@@ -91,6 +91,8 @@
     if (url.origin !== location.origin || !url.pathname.startsWith(BASE) || /\.[a-z0-9]+$/i.test(url.pathname) && !/\.html$/.test(url.pathname)) return;
     e.preventDefault();
     const path = rel(url.pathname) + url.search + url.hash;
+    // leaving the website for the app: show the loading screen with a short, changing line
+    if (/^app(\/|$)/.test(path) && document.body.dataset.layout === 'site' && auth.current()) { RR.splashTo(path, pickTag()); return; }
     if (url.pathname === location.pathname && url.hash) { const t = document.getElementById(url.hash.slice(1)); t && (RR.lenis ? RR.lenis.scrollTo(t, { offset: -90, duration: 1.2 }) : t.scrollIntoView({ behavior: motion.reduce ? 'auto' : 'smooth' })); history.replaceState(null, '', url); return; }
     navigate(path);
   });
@@ -108,13 +110,15 @@
   render();
 
   // show the loading screen again for a full switch of context (e.g. leaving the app for the website)
-  RR.splashTo = path => {
+  const TAGS = ['Track your habits.', 'Keep your life together.', 'One day at a time.', 'Small steps, every day.', 'Today counts.', 'Your streak is waiting.', 'Stay honest, stay steady.', 'Progress, not perfection.', 'Back to your plan.', 'You showed up. Good.'];
+  const pickTag = () => { let last = -1; try { last = +sessionStorage.getItem('reroot.tag'); } catch (e) {} let i; do { i = Math.floor(Math.random() * TAGS.length); } while (i === last && TAGS.length > 1); try { sessionStorage.setItem('reroot.tag', i); } catch (e) {} return TAGS[i]; };
+  RR.splashTo = (path, tag) => {
     if (motion.reduce) return navigate(path);
     const el = document.createElement('div'); el.id = 'splash'; el.className = 'again'; el.setAttribute('aria-hidden', 'true');
-    el.innerHTML = '<svg viewBox="0 0 80 80"><circle class="t" cx="40" cy="40" r="34" fill="none" stroke-width="5"/><circle class="a" cx="40" cy="40" r="34" fill="none" stroke-width="5" pathLength="1"/></svg><span>RE:ROOT</span>';
+    el.innerHTML = '<svg viewBox="0 0 80 80"><circle class="t" cx="40" cy="40" r="34" fill="none" stroke-width="5"/><circle class="a" cx="40" cy="40" r="34" fill="none" stroke-width="5" pathLength="1"/></svg><span>RE:ROOT</span>' + (tag ? `<p class="sp-tag">${tag}</p>` : '');
     document.body.appendChild(el);
     setTimeout(() => navigate(path), 340);
-    setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 650); }, 1150);
+    setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 650); }, tag ? 1550 : 1150);
   };
   // splash once per session
   const splash = $('#splash'); let seen = false;

@@ -265,3 +265,6 @@ html{overflow-y:scroll}
 #splash.again{animation:splashIn .3s ease backwards}
 @keyframes splashIn{from{opacity:0}}
 html.no-hexglow .hexglow{display:none}
+#splash .sp-tag{margin:6px 0 0;padding:0 24px;max-width:min(92vw,520px);text-align:center;font-size:clamp(17px,4.4vw,24px);font-weight:600;letter-spacing:-.02em;line-height:1.25;color:var(--fg);opacity:0;transform:translateY(8px);animation:spTag .6s cubic-bezier(.22,1,.36,1) .35s forwards}
+#splash:has(.sp-tag) span{color:var(--muted);font-size:12.5px}
+@keyframes spTag{to{opacity:1;transform:none}}
