@@ -609,3 +609,23 @@ svg.year rect.fut{fill:none;stroke:var(--faint);stroke-width:1}
 .mrow.mfx{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .mrow.mfx span{font-size:13.5px}
 .menu .mrow.mfx > span{color:var(--fg);font-size:13.5px}
+/* effect strength sliders */
+.menu .mrow.mlvl{display:flex;align-items:center;gap:12px;padding-top:0}
+.mlvl output{font-family:var(--f-mono);font-size:12.5px;color:var(--muted);min-width:38px;text-align:right}
+.rng-s{-webkit-appearance:none;appearance:none;flex:1;height:22px;background:transparent;cursor:pointer;--v:50%}
+.rng-s::-webkit-slider-runnable-track{height:4px;border-radius:4px;background:linear-gradient(90deg,var(--fg) var(--v),var(--line) var(--v))}
+.rng-s::-moz-range-track{height:4px;border-radius:4px;background:var(--line)}
+.rng-s::-moz-range-progress{height:4px;border-radius:4px;background:var(--fg)}
+.rng-s::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;margin-top:-7px;border-radius:50%;background:var(--fg);box-shadow:0 2px 8px rgba(0,0,0,.35);transition:transform .2s}
+.rng-s::-moz-range-thumb{width:18px;height:18px;border:0;border-radius:50%;background:var(--fg)}
+.rng-s:active::-webkit-slider-thumb{transform:scale(1.15)}
+.rng-s:focus-visible{outline:2px solid var(--fg);outline-offset:4px;border-radius:6px}
+/* corner buttons: one clean circle (no extra dark drop shadow under it) */
+.corner{box-shadow:inset 0 0 0 1px var(--line)!important}
+.corner:hover{box-shadow:none!important}
+/* info icon in "When slips happen": a white-bordered circle that glows on hover */
+.slipcard .info-i{width:30px;height:30px;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--fg);color:var(--fg);transition:box-shadow .35s ease,background-color .35s ease,color .35s ease}
+.slipcard .info-i svg{width:16px;height:16px}
+.slipcard .info-i:hover,.slipcard .info-i:focus-visible{background:var(--fg)!important;color:var(--bg);box-shadow:0 0 0 1px var(--fg),0 0 22px 3px color-mix(in srgb,var(--fg) 35%,transparent)}
+.slipcard .info-i:hover svg,.slipcard .info-i:focus-visible svg{color:var(--bg)}
+.corner::after{content:none!important;display:none!important}

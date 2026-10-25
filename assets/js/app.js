@@ -115,6 +115,15 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
   $('#m-fx-plasma').addEventListener('click', () => { const on = !fxOn('plasma'); RR.ls.set('reroot.fx.plasma', on); setPlasma(on); paintFx(); toast(on ? 'Animated background on' : 'Animated background off'); });
   $('#m-fx-hex').addEventListener('click', () => { const on = !fxOn('hex'); RR.ls.set('reroot.fx.hex', on); document.documentElement.classList.toggle('no-hexglow', !on); paintFx(); toast(on ? 'Hexagon glow on' : 'Hexagon glow off'); });
   paintFx();
+  // strength sliders: 50% is the original look; 0 fades the effect out, 100 makes it stronger
+  const lvl = k => { const v = +RR.ls.get('reroot.fx.' + k + 'Level', 50); return isFinite(v) ? Math.max(0, Math.min(100, v)) : 50; };
+  const applyPlasmaLvl = v => { pbg.style.opacity = v <= 50 ? (v / 50).toFixed(2) : ''; pbg.style.filter = v > 50 ? `brightness(${(1 + (v - 50) / 50 * .7).toFixed(2)})` : ''; };
+  const applyHexLvl = v => document.documentElement.style.setProperty('--hk', (v / 50).toFixed(2));
+  [['plasma', applyPlasmaLvl], ['hex', applyHexLvl]].forEach(([k, fn]) => {
+    const inp = $(`#m-fx-${k}-lvl`), out = $(`#m-fx-${k}-out`), paint = v => { inp.value = v; out.textContent = v + '%'; inp.style.setProperty('--v', v + '%'); fn(v); };
+    paint(lvl(k));
+    inp.addEventListener('input', () => { const v = +inp.value; RR.ls.set('reroot.fx.' + k + 'Level', v); paint(v); });
+  });
   $('#m-notif').addEventListener('click', async () => {
     const on = !user.prefs.notif;
     if (on) {
@@ -377,7 +386,7 @@ RR.mountApp = function (layoutRoot, signal, initialTab) {
       <div class="charts">
         <section class="glass card chart"><div class="chart-h"><h3>Your streak</h3><small>${esc(best.name)}</small></div>${streakChart(best, Math.max(7, n))}
           <div class="legend"><span><i class="c"></i>Days in a row</span><span><i class="sl dot"></i>Slip, streak resets</span></div></section>
-        <section class="glass card chart slipcard"><div class="chart-h"><h3>When slips happen</h3><span class="info-i" tabindex="0" role="button" aria-label="Why log slips"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg><span class="info-pop" role="tooltip">Log slips honestly too. They show your real pattern, so you can plan for the hard days.</span></span></div>
+        <section class="glass card chart slipcard"><div class="chart-h"><h3>When slips happen</h3><span class="info-i" tabindex="0" role="button" aria-label="Why log slips"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 11v6"/><path d="M12 7.2h.01" stroke-width="3"/></svg><span class="info-pop" role="tooltip">Log slips honestly too. They show your real pattern, so you can plan for the hard days.</span></span></div>
           ${top ? `<div class="slip-bottom"><div class="wdbars">${wbars}</div><p class="vsub hardday">Your hardest day is <b>${['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][hard]}</b>. Plan something for it.</p></div>`
             : `<div class="noslip"><span class="ns-ic">${CHECK}</span><b>You're on a good path.</b><span>No slips in this period. Keep going.</span></div>`}</section>
       </div>`;

@@ -200,6 +200,7 @@
 
   /* ---------- hexagon lines light up around the pointer ---------- */
   try { if (JSON.parse(localStorage.getItem('reroot.fx.hex')) === false) document.documentElement.classList.add('no-hexglow'); } catch (e) {}
+  try { const hv = JSON.parse(localStorage.getItem('reroot.fx.hexLevel')); if (typeof hv === 'number') document.documentElement.style.setProperty('--hk', (hv / 50).toFixed(2)); } catch (e) {}
   if (matchMedia('(hover: hover) and (pointer: fine)').matches) {
     const hg = document.createElement('div'); hg.className = 'hexglow'; hg.setAttribute('aria-hidden', 'true');
     const amb = document.querySelector('.ambient'); amb ? amb.after(hg) : document.body.prepend(hg);
